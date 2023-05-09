@@ -1,13 +1,12 @@
-class User:
-    def __init__(self, u, e, p):
-        self.username = u
-        self.email = e
-        self.password = p
+from Wallet import Wallet
 
+class User:
     def __init__(self):
         self.username = "undefined"
         self.email = "undefined"
         self.password = "undefined"
+        self.wallet = Wallet(0)
+        
 
     def setUser(self, u, e, p):
         self.username = u

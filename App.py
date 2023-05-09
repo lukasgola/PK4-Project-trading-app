@@ -12,6 +12,7 @@ class LoginForm(customtkinter.CTkFrame):
 
         def login_event():
             user.setUser(self.email.get(), self.email.get(), self.password.get())
+            app = Trade()
 
         
         def signup_event():
@@ -50,9 +51,18 @@ class Login(customtkinter.CTk):
         self.my_frame = LoginForm(self, fg_color="#161A1E")
         self.my_frame.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
         
-    # add methods to app
-    def button_click(self):
-        print("button click")
+class Trade(customtkinter.CTk):
+    def __init__(self):
+        super().__init__()
+        self.geometry("1280x720")
+        self.title("Trade")
+        self.frame1 = tk.Frame(self, width=1280, height=720, background="#161A1E")
+        self.frame1.pack(fill=None, expand=False)
+
+        # add widgets to app
+        self.my_frame = LoginForm(self, fg_color="#161A1E")
+        self.my_frame.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
+
 
 
 
