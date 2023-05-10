@@ -41,9 +41,6 @@ def save_data(username, email, password):
     
 
 
-    
-
-
 def show_signIn(app):
     app.login = LoginFrame(app, fg_color="#161A1E")
     app.login.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
