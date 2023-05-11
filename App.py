@@ -4,6 +4,15 @@ import re
 import sqlite3
 import hashlib
 
+#Charts
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+
+import mplfinance as mpf
+
+import yfinance as yf
+
+
 #Classes
 from User import User
 
@@ -12,6 +21,7 @@ customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("green")
 
 MAIN_COLOR = "#0DCB81"
+SECOND_COLOR = '#F6475D'
 BACK_COLOR = "#161A1E"
 
 #Database
@@ -108,24 +118,18 @@ def show_trade(app):
 class LoginFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-
-        email_vcmd = (self.register(self.validate_email), '%P')
-        password_vcmd = (self.register(self.validate_password), '%P')
         
         # add widgets onto the frame, for example:
         self.signInTitle = customtkinter.CTkLabel(self, text="Welcome!", font=("Roboto", 25))
         self.signInTitle.grid(row=0,column=0,padx=20,pady=20)
 
         self.email = customtkinter.CTkEntry(self, placeholder_text="Email", width=300,height=50,border_width=1, corner_radius=10, font=("Roboto", 14),)
-        self.email.configure(validate='focusout', validatecommand=email_vcmd)
-
         self.email.grid(row=1,column=0,padx=20,pady=5)
 
         self.emailError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
         self.emailError.grid(row=2,column=0,padx=25,pady=0, sticky=tk.W)
 
         self.password = customtkinter.CTkEntry(self, placeholder_text="Password",width=300,height=50,border_width=1,corner_radius=10, show="*", font=("Roboto", 14))
-        self.password.configure(validate='focusout', validatecommand=password_vcmd)
         self.password.grid(row=3, column=0,padx=20,pady=5)
 
         self.passwordError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
@@ -151,8 +155,8 @@ class LoginFrame(customtkinter.CTkFrame):
         if not check_email(emailText):
             self.show_message(self.emailError, "Email not found")
             return False
-        elif not check_password(passwordText):
-            self.show_message(self.passwordError, "Email not found")
+        elif check_email(emailText) and not check_password(passwordText):
+            self.show_message(self.passwordError, "Wrong password")
             return False
             
         
@@ -163,26 +167,6 @@ class LoginFrame(customtkinter.CTkFrame):
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
-
-    def validate_email(self, value):
-        pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-        if value:
-            if re.fullmatch(pattern, value) is None:
-                self.show_message(self.emailError, "Invalid email")
-                return False
-            
-        self.show_message(self.emailError, "")
-        return True
-    
-    def validate_password(self, value):
-        pattern = r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$'
-        if value:
-            if re.fullmatch(pattern, value) is None:
-                self.show_message(self.passwordError, "Invalid password")
-                return False
-
-        self.show_message(self.passwordError, "")
-        return True
 
 
 
@@ -298,16 +282,55 @@ class RegisterFrame(customtkinter.CTkFrame):
 
 
 
+class ChartFrame(customtkinter.CTkFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+
+        #self.chart = customtkinter.CTkFrame(self, width=900, height=600, fg_color="red")
+        #self.chart.grid(row=0, column=0)
+        #self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
+        #self.chart1.grid(row=0, column=1)
+        #self.chart2 = customtkinter.CTkFrame(self, width=1280, height=320, fg_color="yellow")
+        #self.chart2.grid(row=1, column=0, columnspan=2)
+
+        data = yf.download(tickers='BTC-USD', period='1d', interval='5m')
+
+        mc = mpf.make_marketcolors(up=MAIN_COLOR,down=SECOND_COLOR,
+                            edge='inherit',
+                            wick='black',
+                            volume='in',
+                            ohlc='i')
+        s  = mpf.make_mpf_style(base_mpf_style='nightclouds', marketcolors=mc)
+
+        fig = mpf.figure(figsize=(8, 4), dpi=100, style="nightclouds")
+        ax1 = fig.add_subplot(1,1,1)
+        mpf.plot(data, type="candle", ax=ax1, style=s, mav=(20))
+
+        canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
+        canvas.draw()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+        toolbar = NavigationToolbar2Tk(canvas, self)
+        toolbar.update()
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
 class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        self.chart = customtkinter.CTkFrame(self, width=900, height=600, fg_color="red")
+        self.chart = ChartFrame(self, width=900, height=600, fg_color=BACK_COLOR)
         self.chart.grid(row=0, column=0)
         self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
         self.chart1.grid(row=0, column=1)
-        self.chart2 = customtkinter.CTkFrame(self, width=1280, height=320, fg_color="yellow")
-        self.chart2.grid(row=1, column=0, columnspan=2)
+
+        def _quit():
+            app.quit()     # stops mainloop
+            app.destroy()  # this is necessary on Windows to prevent
+                            # Fatal Python Error: PyEval_RestoreThread: NULL tstate
+
+
+        self.button = customtkinter.CTkButton(master=self, width=1280, height=320, text="Quit", command=_quit)
+        self.button.grid(row=1, column=0, columnspan=2)
 
 
         
@@ -319,7 +342,7 @@ class App(customtkinter.CTk):
         self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color=BACK_COLOR)
         self.frame1.pack(fill=None, expand=False)
 
-        show_signIn(self)
+        show_trade(self)
         
 
 
