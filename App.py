@@ -11,6 +11,8 @@ from User import User
 customtkinter.set_appearance_mode("System")
 customtkinter.set_default_color_theme("green")
 
+MAIN_COLOR = "#0DCB81"
+BACK_COLOR = "#161A1E"
 
 #Database
 def check_data(email, password):
@@ -29,28 +31,76 @@ def check_data(email, password):
         return False
 
 
+def check_username(username):
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM userdata WHERE username = ?",(username,))
+
+    if cursor.fetchall():
+        connection.close()
+        return True
+    else:
+        connection.close()
+        return False
+
+def check_email(email):
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM userdata WHERE email = ?",(email,))
+
+    if cursor.fetchall():
+        connection.close()
+        return True
+    else:
+        connection.close()
+        return False
+    
+def check_password(password):
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    password = hashlib.sha256(password.encode()).hexdigest()
+
+    cursor.execute("SELECT * FROM userdata WHERE password = ?",(password,))
+
+    if cursor.fetchall():
+        connection.close()
+        return True
+    else:
+        connection.close()
+        return False
+    
+
 def save_data(username, email, password):
     connection = sqlite3.connect("userdata.db")
     cursor = connection.cursor()
 
     password = hashlib.sha256(password.encode()).hexdigest()
 
+    cursor.execute("""CREATE TABLE IF NOT EXISTS userdata (
+        id INTEGER PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL
+    )""")
+
     cursor.execute("INSERT INTO userdata (username, email, password) VALUES (?, ?, ?)",(username, email, password))
 
-    connection.close()
+    connection.commit()
     
 
-
 def show_signIn(app):
-    app.login = LoginFrame(app, fg_color="#161A1E")
+    app.login = LoginFrame(app, fg_color=BACK_COLOR)
     app.login.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 def show_signUp(app):
-    app.reg = RegisterFrame(app, fg_color="#161A1E")
+    app.reg = RegisterFrame(app, fg_color=BACK_COLOR)
     app.reg.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 def show_trade(app):
-    app.trade = TradeFrame(app, fg_color="#161A1E")
+    app.trade = TradeFrame(app, fg_color=BACK_COLOR)
     app.trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
@@ -66,39 +116,44 @@ class LoginFrame(customtkinter.CTkFrame):
         self.signInTitle = customtkinter.CTkLabel(self, text="Welcome!", font=("Roboto", 25))
         self.signInTitle.grid(row=0,column=0,padx=20,pady=20)
 
-        self.email = customtkinter.CTkEntry(self, placeholder_text="Email",width=300,height=50,border_width=1, corner_radius=10, font=("Roboto", 14),)
-
+        self.email = customtkinter.CTkEntry(self, placeholder_text="Email", width=300,height=50,border_width=1, corner_radius=10, font=("Roboto", 14),)
         self.email.configure(validate='focusout', validatecommand=email_vcmd)
 
         self.email.grid(row=1,column=0,padx=20,pady=5)
 
-        self.emailError = customtkinter.CTkLabel(self, text="", font=("Roboto", 8), height=8)
+        self.emailError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
         self.emailError.grid(row=2,column=0,padx=25,pady=0, sticky=tk.W)
 
         self.password = customtkinter.CTkEntry(self, placeholder_text="Password",width=300,height=50,border_width=1,corner_radius=10, show="*", font=("Roboto", 14))
         self.password.configure(validate='focusout', validatecommand=password_vcmd)
         self.password.grid(row=3, column=0,padx=20,pady=5)
 
-        self.passwordError = customtkinter.CTkLabel(self, text="", font=("Roboto", 8), height=8)
+        self.passwordError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
         self.passwordError.grid(row=4,column=0,padx=25,pady=0, sticky=tk.W)
 
-        self.signIn = customtkinter.CTkButton(self, text="Sign In", font=("Roboto", 16), fg_color="#0DCB81", width=300, height=50, command=self.signIn_event)
+        self.signIn = customtkinter.CTkButton(self, text="Sign In", font=("Roboto", 16), fg_color=MAIN_COLOR, width=300, height=50, command=self.signIn_event)
         self.signIn.grid(row=5, column=0,padx=20,pady=5)
 
 
         self.dontHaveAccount = customtkinter.CTkLabel(self, text="Dont have account?", font=("Roboto", 12), fg_color="transparent", width=150, height=20)
         self.dontHaveAccount.grid(row=6, column=0,padx=20,pady=5, sticky=tk.W)
 
-        self.goToSignUp = customtkinter.CTkButton(self, text="Sign Up", font=("Roboto", 12), fg_color="transparent", width=150, height=20, text_color="#0DCB81", hover="disable", command=self.goToSignUp_event)
+        self.goToSignUp = customtkinter.CTkButton(self, text="Sign Up", font=("Roboto", 12), fg_color="transparent", width=150, height=20, text_color=MAIN_COLOR, hover="disable", command=self.goToSignUp_event)
         self.goToSignUp.grid(row=6, column=0,padx=20,pady=5, sticky=tk.E)
     
 
     def signIn_event(self):
-        email_text = self.email.get()
-        password_text = self.password.get()
+        emailText = self.email.get()
+        passwordText = self.password.get()
 
-        if check_data(email_text, password_text):
+        if check_data(emailText, passwordText):
             show_trade(app)
+        if not check_email(emailText):
+            self.show_message(self.emailError, "Email not found")
+            return False
+        elif not check_password(passwordText):
+            self.show_message(self.passwordError, "Email not found")
+            return False
             
         
     def goToSignUp_event(self):
@@ -109,23 +164,22 @@ class LoginFrame(customtkinter.CTkFrame):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
 
-
     def validate_email(self, value):
         pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-
-        if re.fullmatch(pattern, value) is None:
-            self.show_message(self.emailError, "Invalid email")
-            return False
-
+        if value:
+            if re.fullmatch(pattern, value) is None:
+                self.show_message(self.emailError, "Invalid email")
+                return False
+            
         self.show_message(self.emailError, "")
         return True
     
     def validate_password(self, value):
         pattern = r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$'
-
-        if re.fullmatch(pattern, value) is None:
-            self.show_message(self.passwordError, "Invalid password")
-            return False
+        if value:
+            if re.fullmatch(pattern, value) is None:
+                self.show_message(self.passwordError, "Invalid password")
+                return False
 
         self.show_message(self.passwordError, "")
         return True
@@ -137,39 +191,111 @@ class RegisterFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
+        email_vcmd = (self.register(self.validate_email), '%P')
+        password_vcmd = (self.register(self.validate_password), '%P')
+
         # add widgets onto the frame, for example:
         self.SignUpTitle = customtkinter.CTkLabel(self, text="Sign Up!", font=("Roboto", 25))
         self.SignUpTitle.grid(row=0,column=0,padx=20,pady=20)
 
         self.username = customtkinter.CTkEntry(self, placeholder_text="Username",width=300,height=50,border_width=1,corner_radius=10, font=("Roboto", 14))
+        self.username.configure(validate='focusout', validatecommand=self.validate_username)
         self.username.grid(row=1,column=0,padx=20,pady=5)
 
+        self.usernameError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
+        self.usernameError.grid(row=2,column=0,padx=25,pady=0, sticky=tk.W)
+
         self.email = customtkinter.CTkEntry(self, placeholder_text="Email",width=300,height=50,border_width=1,corner_radius=10, font=("Roboto", 14))
-        self.email.grid(row=2,column=0,padx=20,pady=5)
+        self.email.configure(validate='focusout', validatecommand=email_vcmd)
+        self.email.grid(row=3,column=0,padx=20,pady=5)
+        
+
+        self.emailError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
+        self.emailError.grid(row=4,column=0,padx=25,pady=0, sticky=tk.W)
 
         self.password = customtkinter.CTkEntry(self, placeholder_text="Password",width=300,height=50,border_width=1,corner_radius=10, show="*", font=("Roboto", 14))
-        self.password.grid(row=3, column=0,padx=20,pady=5)
+        self.password.configure(validate='focusout', validatecommand=password_vcmd)
+        self.password.grid(row=5, column=0,padx=20,pady=5)
 
-        self.password = customtkinter.CTkEntry(self, placeholder_text="Confirm Password",width=300,height=50,border_width=1,corner_radius=10, show="*", font=("Roboto", 14))
-        self.password.grid(row=4, column=0,padx=20,pady=5)
+        self.passwordError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
+        self.passwordError.grid(row=6,column=0,padx=25,pady=0, sticky=tk.W)
 
-        self.signUp = customtkinter.CTkButton(self, text="Sign Up", font=("Roboto", 16), fg_color="#0DCB81", width=300, height=50, command=self.signUp_event)
-        self.signUp.grid(row=5, column=0,padx=20,pady=5)
+        self.passwordRepeat = customtkinter.CTkEntry(self, placeholder_text="Confirm Password",width=300,height=50,border_width=1,corner_radius=10, show="*", font=("Roboto", 14))
+        self.passwordRepeat.configure(validate='focusout', validatecommand=self.validate_password_match)
+        self.passwordRepeat.grid(row=7, column=0,padx=20,pady=5)
+
+        self.passwordMatchError = customtkinter.CTkLabel(self, text="", font=("Roboto", 10), height=10)
+        
+        self.passwordMatchError.grid(row=8,column=0,padx=25,pady=0, sticky=tk.W)
+
+        self.signUp = customtkinter.CTkButton(self, text="Sign Up", font=("Roboto", 16), fg_color=MAIN_COLOR, width=300, height=50, command=self.signUp_event)
+        self.signUp.grid(row=9, column=0,padx=20,pady=5)
 
 
         self.dontHaveAccount = customtkinter.CTkLabel(self, text="Have account?", font=("Roboto", 12), fg_color="transparent", width=150, height=20)
-        self.dontHaveAccount.grid(row=6, column=0,padx=20,pady=5, sticky=tk.W)
+        self.dontHaveAccount.grid(row=10, column=0,padx=20,pady=5, sticky=tk.W)
 
-        self.goToSignIn = customtkinter.CTkButton(self, text="Sign In", font=("Roboto", 12), fg_color="transparent", width=150, height=20, text_color="#0DCB81", hover="disable", command=self.goToSignIn_event)
-        self.goToSignIn.grid(row=6, column=0,padx=20,pady=5, sticky=tk.E)
+        self.goToSignIn = customtkinter.CTkButton(self, text="Sign In", font=("Roboto", 12), fg_color="transparent", width=150, height=20, text_color=MAIN_COLOR, hover="disable", command=self.goToSignIn_event)
+        self.goToSignIn.grid(row=10, column=0,padx=20,pady=5, sticky=tk.E)
 
     def signUp_event(self):
-            self.destroy()
-            show_trade(app)
+            username = self.username.get()
+            email = self.email.get()
+            password = self.password.get()
+
+            if not check_username(username) and not check_email(email) and self.validate_email(email) and self.validate_password(password):
+                save_data(username, email, password)
+                self.destroy()
+                show_trade(app)
         
     def goToSignIn_event(self):
         self.destroy()
         show_signIn(app)
+
+    def show_message(self, atributte, error='', color='black'):
+        atributte.configure(text=error)
+        atributte.configure(text_color="red")
+
+    def validate_username(self):
+        if check_username(self.username.get()):
+            self.show_message(self.usernameError, "Username in use")
+            return False
+            
+        self.show_message(self.usernameError, "")
+        return True
+        
+
+    def validate_email(self, value):
+        pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        if value:
+            if check_email(value):
+                self.show_message(self.emailError, "Email in use")
+                return False
+            if re.fullmatch(pattern, value) is None:
+                self.show_message(self.emailError, "Invalid email")
+                return False
+            
+        self.show_message(self.emailError, "")
+        return True
+    
+    def validate_password(self, value):
+        pattern = r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$'
+        if value:
+            if re.fullmatch(pattern, value) is None:
+                self.show_message(self.passwordError, "Invalid password")
+                return False
+
+        self.show_message(self.passwordError, "")
+        return True
+    
+    def validate_password_match(self):
+        if re.fullmatch(self.password.get(), self.passwordRepeat.get()) is None:
+            self.show_message(self.passwordMatchError, "Passwords not match")
+            return False
+        
+        self.show_message(self.passwordMatchError)
+        return True
+
 
 
 class TradeFrame(customtkinter.CTkFrame):
@@ -190,7 +316,7 @@ class App(customtkinter.CTk):
         super().__init__()
         self.geometry("1280x720")
         self.title("Trading App")
-        self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color="#161A1E")
+        self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color=BACK_COLOR)
         self.frame1.pack(fill=None, expand=False)
 
         show_signIn(self)
