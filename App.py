@@ -342,7 +342,7 @@ class App(customtkinter.CTk):
         self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color=BACK_COLOR)
         self.frame1.pack(fill=None, expand=False)
 
-        show_trade(self)
+        show_signIn(self)
         
 
 
