@@ -37,7 +37,7 @@ def animate(ival):
             exit()
         return
     
-    idf2 = yf.download(tickers='BTC-USD', period='2d', interval='1m')
+    idf2 = yf.download(tickers='BTC-USD', period='2d', interval='15m')
 
     data = idf2.iloc[len(idf2)-50:len(idf2)]
     ax1.clear()
