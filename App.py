@@ -12,6 +12,8 @@ import mplfinance as mpf
 
 import yfinance as yf
 
+import matplotlib.animation as animation
+
 
 #Classes
 from User import User
@@ -155,7 +157,7 @@ class LoginFrame(customtkinter.CTkFrame):
         if not check_email(emailText):
             self.show_message(self.emailError, "Email not found")
             return False
-        elif check_email(emailText) and not check_password(passwordText):
+        elif check_email(emailText) and not check_data(emailText, passwordText):
             self.show_message(self.passwordError, "Wrong password")
             return False
             
@@ -286,14 +288,7 @@ class ChartFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        #self.chart = customtkinter.CTkFrame(self, width=900, height=600, fg_color="red")
-        #self.chart.grid(row=0, column=0)
-        #self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
-        #self.chart1.grid(row=0, column=1)
-        #self.chart2 = customtkinter.CTkFrame(self, width=1280, height=320, fg_color="yellow")
-        #self.chart2.grid(row=1, column=0, columnspan=2)
-
-        data = yf.download(tickers='BTC-USD', period='1d', interval='5m')
+        data = yf.download(tickers='BTC-USD', period='2d', interval='5m')
 
         mc = mpf.make_marketcolors(up=MAIN_COLOR,down=SECOND_COLOR,
                             edge='inherit',
@@ -302,9 +297,21 @@ class ChartFrame(customtkinter.CTkFrame):
                             ohlc='i')
         s  = mpf.make_mpf_style(base_mpf_style='nightclouds', marketcolors=mc)
 
-        fig = mpf.figure(figsize=(8, 4), dpi=100, style="nightclouds")
+        pkwargs=dict(type='candle', mav=(10,20))
+
+        fig = mpf.figure(figsize=(8,5.5), style="nightclouds")
         ax1 = fig.add_subplot(1,1,1)
-        mpf.plot(data, type="candle", ax=ax1, style=s, mav=(20))
+        ax2 = fig.add_subplot(2,2,2)
+        mpf.plot(data.iloc[len(data)-50:len(data)],returnfig=True, ax=ax1, volume=ax2, figsize=(8,5.5), style=s, **pkwargs )
+
+        def animate(ival):    
+            idf2 = yf.download(tickers='BTC-USD', period='2d', interval='15m')
+
+            data2 = idf2.iloc[len(idf2)-50:len(idf2)]
+            ax1.clear()
+            mpf.plot(data2,returnfig=True, figsize=(12,9), panel_ratios=(3,2), ax=ax1, style=s, **pkwargs )
+
+        #ani = animation.FuncAnimation(fig, animate, interval=60000)
 
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
         canvas.draw()
@@ -337,13 +344,14 @@ class TradeFrame(customtkinter.CTkFrame):
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("1280x720")
+        self.geometry("1280x900")
         self.title("Trading App")
         self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color=BACK_COLOR)
         self.frame1.pack(fill=None, expand=False)
 
-        show_signIn(self)
+        show_trade(self)
         
+
 
 
 user = User()
