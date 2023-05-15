@@ -42,7 +42,6 @@ def check_data(email, password):
         connection.close()
         return False
 
-
 def check_username(username):
     connection = sqlite3.connect("userdata.db")
     cursor = connection.cursor()
@@ -116,7 +115,6 @@ def show_trade(app):
     app.trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
-
 class LoginFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -146,6 +144,8 @@ class LoginFrame(customtkinter.CTkFrame):
 
         self.goToSignUp = customtkinter.CTkButton(self, text="Sign Up", font=("Roboto", 12), fg_color="transparent", width=150, height=20, text_color=MAIN_COLOR, hover="disable", command=self.goToSignUp_event)
         self.goToSignUp.grid(row=6, column=0,padx=20,pady=5, sticky=tk.E)
+
+        self.chech_user()
     
 
     def signIn_event(self):
@@ -170,7 +170,13 @@ class LoginFrame(customtkinter.CTkFrame):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
 
-
+    def chech_user(self):
+        f = open('currentUser.txt', 'r')
+        user = f.readline()
+        
+        #if check_username(user):
+            #show_trade(app)
+            #show_signIn(app)
 
 
 class RegisterFrame(customtkinter.CTkFrame):
@@ -283,7 +289,6 @@ class RegisterFrame(customtkinter.CTkFrame):
         return True
 
 
-
 class ChartFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -299,10 +304,10 @@ class ChartFrame(customtkinter.CTkFrame):
 
         pkwargs=dict(type='candle', mav=(10,20))
 
-        fig = mpf.figure(figsize=(8,5.5), style="nightclouds")
-        ax1 = fig.add_subplot(1,1,1)
-        ax2 = fig.add_subplot(2,2,2)
-        mpf.plot(data.iloc[len(data)-50:len(data)],returnfig=True, ax=ax1, volume=ax2, figsize=(8,5.5), style=s, **pkwargs )
+        #fig = mpf.figure(figsize=(8,5.5), style="nightclouds")
+        #ax1 = fig.add_subplot(1,1,1)
+        #ax2 = fig.add_subplot(2,1,2)
+        fig, axes = mpf.plot(data.iloc[len(data)-50:len(data)],returnfig=True, volume=True, style=s, **pkwargs )
 
         def animate(ival):    
             idf2 = yf.download(tickers='BTC-USD', period='2d', interval='15m')
@@ -325,7 +330,7 @@ class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        self.chart = ChartFrame(self, width=900, height=600, fg_color=BACK_COLOR)
+        self.chart = ChartFrame(self, fg_color=BACK_COLOR)
         self.chart.grid(row=0, column=0)
         self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
         self.chart1.grid(row=0, column=1)
@@ -336,7 +341,7 @@ class TradeFrame(customtkinter.CTkFrame):
                             # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
 
-        self.button = customtkinter.CTkButton(master=self, width=1280, height=320, text="Quit", command=_quit)
+        self.button = customtkinter.CTkButton(self, width=1280, height=320, text="Quit", command=_quit)
         self.button.grid(row=1, column=0, columnspan=2)
 
 
@@ -348,11 +353,9 @@ class App(customtkinter.CTk):
         self.title("Trading App")
         self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color=BACK_COLOR)
         self.frame1.pack(fill=None, expand=False)
-
-        show_trade(self)
         
-
-
+        show_signIn(self)
+        
 
 user = User()
 app = App()
