@@ -100,19 +100,6 @@ def save_data(username, email, password):
     cursor.execute("INSERT INTO userdata (username, email, password) VALUES (?, ?, ?)",(username, email, password))
 
     connection.commit()
-    
-
-def show_signIn(app):
-    app.login = LoginFrame(app, fg_color=BACK_COLOR)
-    app.login.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
-
-def show_signUp(app):
-    app.reg = RegisterFrame(app, fg_color=BACK_COLOR)
-    app.reg.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
-
-def show_trade(app):
-    app.trade = TradeFrame(app, fg_color=BACK_COLOR)
-    app.trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
 class LoginFrame(customtkinter.CTkFrame):
@@ -144,8 +131,6 @@ class LoginFrame(customtkinter.CTkFrame):
 
         self.goToSignUp = customtkinter.CTkButton(self, text="Sign Up", font=("Roboto", 12), fg_color="transparent", width=150, height=20, text_color=MAIN_COLOR, hover="disable", command=self.goToSignUp_event)
         self.goToSignUp.grid(row=6, column=0,padx=20,pady=5, sticky=tk.E)
-
-        self.chech_user()
     
 
     def signIn_event(self):
@@ -153,7 +138,7 @@ class LoginFrame(customtkinter.CTkFrame):
         passwordText = self.password.get()
 
         if check_data(emailText, passwordText):
-            show_trade(app)
+            app.show_frame(TradeFrame, LoginFrame)
         if not check_email(emailText):
             self.show_message(self.emailError, "Email not found")
             return False
@@ -163,20 +148,11 @@ class LoginFrame(customtkinter.CTkFrame):
             
         
     def goToSignUp_event(self):
-        self.destroy()
-        show_signUp(app)
+        app.show_frame(RegisterFrame, LoginFrame)
     
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
-
-    def chech_user(self):
-        f = open('currentUser.txt', 'r')
-        user = f.readline()
-        
-        #if check_username(user):
-            #show_trade(app)
-            #show_signIn(app)
 
 
 class RegisterFrame(customtkinter.CTkFrame):
@@ -237,12 +213,10 @@ class RegisterFrame(customtkinter.CTkFrame):
 
             if not check_username(username) and not check_email(email) and self.validate_email(email) and self.validate_password(password):
                 save_data(username, email, password)
-                self.destroy()
-                show_trade(app)
+                app.show_frame(TradeFrame, RegisterFrame)
         
     def goToSignIn_event(self):
-        self.destroy()
-        show_signIn(app)
+        app.show_frame(LoginFrame, RegisterFrame)
 
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
@@ -304,19 +278,16 @@ class ChartFrame(customtkinter.CTkFrame):
 
         pkwargs=dict(type='candle', mav=(10,20))
 
-        #fig = mpf.figure(figsize=(8,5.5), style="nightclouds")
-        #ax1 = fig.add_subplot(1,1,1)
-        #ax2 = fig.add_subplot(2,1,2)
         fig, axes = mpf.plot(data.iloc[len(data)-50:len(data)],returnfig=True, volume=True, style=s, **pkwargs )
 
         def animate(ival):    
-            idf2 = yf.download(tickers='BTC-USD', period='2d', interval='15m')
+            idf2 = yf.download(tickers='BTC-USD', period='2d', interval='5m')
 
             data2 = idf2.iloc[len(idf2)-50:len(idf2)]
-            ax1.clear()
-            mpf.plot(data2,returnfig=True, figsize=(12,9), panel_ratios=(3,2), ax=ax1, style=s, **pkwargs )
+            axes[0].clear()
+            fig, axes = mpf.plot(data2, returnfig=True, volume=True, style=s, **pkwargs )
 
-        #ani = animation.FuncAnimation(fig, animate, interval=60000)
+        #ani = animation.FuncAnimation(fig, animate, interval=1000)
 
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
         canvas.draw()
@@ -332,8 +303,8 @@ class TradeFrame(customtkinter.CTkFrame):
 
         self.chart = ChartFrame(self, fg_color=BACK_COLOR)
         self.chart.grid(row=0, column=0)
-        self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
-        self.chart1.grid(row=0, column=1)
+        #self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
+        #self.chart1.grid(row=0, column=1)
 
         def _quit():
             app.quit()     # stops mainloop
@@ -341,20 +312,40 @@ class TradeFrame(customtkinter.CTkFrame):
                             # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
 
-        self.button = customtkinter.CTkButton(self, width=1280, height=320, text="Quit", command=_quit)
+        self.button = customtkinter.CTkButton(self, width=1280, text="Quit", command=_quit)
         self.button.grid(row=1, column=0, columnspan=2)
 
 
-        
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("1280x900")
+        self.geometry("1280x720")
         self.title("Trading App")
-        self.frame1 = customtkinter.CTkFrame(self, width=1280, height=720, fg_color=BACK_COLOR)
-        self.frame1.pack(fill=None, expand=False)
+
         
-        show_signIn(self)
+        self.container = customtkinter.CTkFrame(self, fg_color = BACK_COLOR)
+        self.container.pack(side="top", fill="both", expand=True)
+
+        self.container.grid_rowconfigure(0, weight=1)
+        self.container.grid_columnconfigure(0, weight=1)
+
+
+        self.frames = {}
+        
+        register = RegisterFrame(self.container, fg_color=BACK_COLOR)
+
+        self.frames[RegisterFrame] = register
+
+        register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
+
+        self.show_frame(TradeFrame, RegisterFrame)
+        
+    def show_frame(self, cont, old): 
+        oldFrame = self.frames[old]
+        oldFrame.destroy()
+        frame = cont(self.container, fg_color = BACK_COLOR)
+        self.frames[cont] = frame
+        frame.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
         
 
 user = User()
