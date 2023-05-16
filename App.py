@@ -265,7 +265,7 @@ class RegisterFrame(customtkinter.CTkFrame):
 
 class ChartFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
+        super().__init__(master, width=800, height=520, **kwargs)
 
         data = yf.download(tickers='BTC-USD', period='2d', interval='5m')
 
@@ -278,7 +278,7 @@ class ChartFrame(customtkinter.CTkFrame):
 
         pkwargs=dict(type='candle', mav=(10,20))
 
-        fig, axes = mpf.plot(data.iloc[len(data)-50:len(data)],returnfig=True, volume=True, style=s, **pkwargs )
+        fig, axes = mpf.plot(data.iloc[len(data)-50:len(data)],figsize=(4,3), returnfig=True, volume=True, style=s, **pkwargs )
 
         def animate(ival):    
             idf2 = yf.download(tickers='BTC-USD', period='2d', interval='5m')
@@ -288,23 +288,22 @@ class ChartFrame(customtkinter.CTkFrame):
             fig, axes = mpf.plot(data2, returnfig=True, volume=True, style=s, **pkwargs )
 
         #ani = animation.FuncAnimation(fig, animate, interval=1000)
-
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-        toolbar = NavigationToolbar2Tk(canvas, self)
-        toolbar.update()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        #toolbar = NavigationToolbar2Tk(canvas, self)
+        #toolbar.update()
+        #canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        self.chart = ChartFrame(self, fg_color=BACK_COLOR)
+        self.chart = ChartFrame(self, fg_color="red")
         self.chart.grid(row=0, column=0)
-        #self.chart1 = customtkinter.CTkFrame(self, width=480, height=600, fg_color="green")
-        #self.chart1.grid(row=0, column=1)
+        self.chart1 = customtkinter.CTkFrame(self, width=480, height=520, fg_color="green")
+        self.chart1.grid(row=0, column=1)
 
         def _quit():
             app.quit()     # stops mainloop
@@ -312,7 +311,7 @@ class TradeFrame(customtkinter.CTkFrame):
                             # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
 
-        self.button = customtkinter.CTkButton(self, width=1280, text="Quit", command=_quit)
+        self.button = customtkinter.CTkButton(self, width=1280, height=200, text="Quit", command=_quit)
         self.button.grid(row=1, column=0, columnspan=2)
 
 
