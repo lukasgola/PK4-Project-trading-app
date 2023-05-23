@@ -44,6 +44,6 @@ def animate(ival):
     ax2.clear()
     mpf.plot(data,ax=ax1,volume=ax2,**pkwargs)
 
-ani = animation.FuncAnimation(fig, animate, interval=1000)
+ani = animation.FuncAnimation(fig, animate, interval=200)
 
 mpf.show()

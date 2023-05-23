@@ -5,14 +5,15 @@ import sqlite3
 import hashlib
 
 #Charts
-from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
+import matplotlib.animation as animation
+from matplotlib import pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.ticker as mticker
+
 
 import mplfinance as mpf
-
 import yfinance as yf
-
-import matplotlib.animation as animation
 
 
 #Classes
@@ -100,6 +101,21 @@ def save_data(username, email, password):
     cursor.execute("INSERT INTO userdata (username, email, password) VALUES (?, ?, ?)",(username, email, password))
 
     connection.commit()
+
+
+exchange = "BTC-USD"
+DatCounter = 9000
+
+chartLoad = True
+DataPace = "tick"
+
+def changeExchange(ex):
+    global exchange
+    global DatCounter
+
+    exchange = ex
+    DatCounter = 9000
+
 
 
 class LoginFrame(customtkinter.CTkFrame):
@@ -267,34 +283,53 @@ class ChartFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, width=800, height=520, **kwargs)
 
-        data = yf.download(tickers='BTC-USD', period='2d', interval='5m')
+        idf = yf.download(tickers='BTC-USD', period='2d', interval='2m')
 
-        mc = mpf.make_marketcolors(up=MAIN_COLOR,down=SECOND_COLOR,
-                            edge='inherit',
-                            wick='black',
-                            volume='in',
-                            ohlc='i')
-        s  = mpf.make_mpf_style(base_mpf_style='nightclouds', marketcolors=mc)
+        mc = mpf.make_marketcolors(up=MAIN_COLOR, down=SECOND_COLOR, edge={'up': MAIN_COLOR, 'down': SECOND_COLOR}, volume=MAIN_COLOR)
+        s = mpf.make_mpf_style(marketcolors=mc, base_mpf_style="nightclouds")
+        pkwargs=dict(type='candle', mav=(10,20), style=s)
 
-        pkwargs=dict(type='candle', mav=(10,20))
 
-        fig, axes = mpf.plot(data.iloc[len(data)-50:len(data)],figsize=(4,3), returnfig=True, volume=True, style=s, **pkwargs )
+        fig, axes = mpf.plot(idf.iloc[0:50], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
+        ax1 = axes[0]
+        ax2 = axes[2]
 
-        def animate(ival):    
-            idf2 = yf.download(tickers='BTC-USD', period='2d', interval='5m')
+        def animate(ival):
 
-            data2 = idf2.iloc[len(idf2)-50:len(idf2)]
-            axes[0].clear()
-            fig, axes = mpf.plot(data2, returnfig=True, volume=True, style=s, **pkwargs )
+            global refreshRate
+            global DatCounter
 
-        #ani = animation.FuncAnimation(fig, animate, interval=1000)
+            if chartLoad:
+                if DataPace == "tick":
+                    try:
+                        if (50+ival) > len(idf):
+                            print('no more data to plot')
+                            ani.event_source.interval *= 3
+                            if ani.event_source.interval > 12000:
+                                exit()
+                            return
+                        
+                        idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
+
+                        data = idf2.iloc[0+ival:50+ival]
+                        ax1.clear()
+                        ax2.clear()
+                        mpf.plot(data, ax=ax1, volume=ax2, **pkwargs)
+                        ax1.set_title(exchange)
+                    
+                    except Exception as e:
+                        print("Failed because of", e)
+
+        ani = animation.FuncAnimation(fig, animate, interval=1000)
+
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
         canvas.draw()
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
         #toolbar = NavigationToolbar2Tk(canvas, self)
         #toolbar.update()
-        #canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
 
 class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -302,7 +337,7 @@ class TradeFrame(customtkinter.CTkFrame):
 
         self.chart = ChartFrame(self, fg_color="red")
         self.chart.grid(row=0, column=0)
-        self.chart1 = customtkinter.CTkFrame(self, width=480, height=520, fg_color="green")
+        self.chart1 = customtkinter.CTkFrame(self, width=480, height=520, fg_color=BACK_COLOR)
         self.chart1.grid(row=0, column=1)
 
         def _quit():
@@ -328,6 +363,19 @@ class App(customtkinter.CTk):
         self.container.grid_rowconfigure(0, weight=1)
         self.container.grid_columnconfigure(0, weight=1)
 
+        menubar = tk.Menu(self.container)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Exit", command=quit)
+        menubar.add_cascade(label="File", menu=filemenu)
+
+
+        exchangeChoice = tk.Menu(menubar, tearoff=0)
+        exchangeChoice.add_command(label="BTC-USD", command=lambda: changeExchange("BTC-USD"))
+        exchangeChoice.add_command(label="ETH-USD", command=lambda: changeExchange("ETH-USD"))
+
+        menubar.add_cascade(label="Exchange", menu=exchangeChoice)
+
+        tk.Tk.config(self, menu=menubar)
 
         self.frames = {}
         
@@ -337,7 +385,7 @@ class App(customtkinter.CTk):
 
         register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
-        self.show_frame(TradeFrame, RegisterFrame)
+        self.show_frame(LoginFrame, RegisterFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
