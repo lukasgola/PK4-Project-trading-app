@@ -328,26 +328,109 @@ class ChartFrame(customtkinter.CTkFrame):
 
         #toolbar = NavigationToolbar2Tk(canvas, self)
         #toolbar.update()
-        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        #canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
+class LongFrame(customtkinter.CTkFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+
+        def sellClick(self):
+            master.show_frame(ShortFrame, LongFrame)
+        
+        # add widgets onto the frame, for example:
+
+        self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
+        self.left.grid(row=0, column=0, rowspan=6)
+
+        self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
+        self.left.grid(row=0, column=3, rowspan=6)
+        
+
+        self.signIn = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=False, width=130, height=30)
+        self.signIn.grid(row=0, column=1,padx=10,pady=5)
+
+        self.signIn = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=130, height=30, command=lambda: sellClick(self))
+        self.signIn.grid(row=0, column=2,padx=10,pady=5)
+    
+        self.price = customtkinter.CTkEntry(self, placeholder_text="Price", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.price.grid(row=1,column=1, padx=20,pady=5, columnspan=2)
+
+        self.volume = customtkinter.CTkEntry(self, placeholder_text="Volume", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.volume.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
+
+        self.stopLoss = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
+        self.stopLoss.grid(row=3, column=1, padx=20, sticky=tk.W)
+
+        self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.stopLossValue.grid(row=4,column=1, padx=20,pady=5, columnspan=2)
+
+        self.takeProfit = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
+        self.takeProfit.grid(row=5, column=1, padx=20, sticky=tk.W)
+
+        self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.takeProfitValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
+        
+            
+        
+    def goToSignUp_event(self):
+        app.show_frame(RegisterFrame, LoginFrame)
+    
+    def show_message(self, atributte, error='', color='black'):
+        atributte.configure(text=error)
+        atributte.configure(text_color="red")
+
+class ShortFrame(customtkinter.CTkFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+
+        def buyClick(self):
+            master.show_frame(LongFrame, ShortFrame)
+        
+        # add widgets onto the frame, for example:
+
+        self.signIn = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=150, height=30, command=lambda: buyClick(self))
+        self.signIn.grid(row=0, column=0,padx=20,pady=5)
+
+        self.signIn = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color=SECOND_COLOR, hover=False, width=150, height=30)
+        self.signIn.grid(row=0, column=1,padx=20,pady=5)
+    
+
+    
+            
+        
+    def goToSignUp_event(self):
+        app.show_frame(RegisterFrame, LoginFrame)
+    
+    def show_message(self, atributte, error='', color='black'):
+        atributte.configure(text=error)
+        atributte.configure(text_color="red")
 
 class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
         self.chart = ChartFrame(self, fg_color="red")
-        self.chart.grid(row=0, column=0)
-        self.chart1 = customtkinter.CTkFrame(self, width=480, height=520, fg_color=BACK_COLOR)
-        self.chart1.grid(row=0, column=1)
+        self.chart.grid(row=0, column=0, sticky=tk.W)
 
-        def _quit():
-            app.quit()     # stops mainloop
-            app.destroy()  # this is necessary on Windows to prevent
-                            # Fatal Python Error: PyEval_RestoreThread: NULL tstate
-
-
-        self.button = customtkinter.CTkButton(self, width=1280, height=200, text="Quit", command=_quit)
+        self.button = customtkinter.CTkButton(self, width=1280, height=200, text="Quit", command=quit)
         self.button.grid(row=1, column=0, columnspan=2)
+
+        self.frames = {}
+        
+        sell = ShortFrame(self, width=480, height=520, fg_color=BACK_COLOR)
+
+        self.frames[ShortFrame] = sell
+
+        sell.grid(row=0, column=1)
+
+        self.show_frame(LongFrame, ShortFrame)
+        
+    def show_frame(self, cont, old): 
+        oldFrame = self.frames[old]
+        oldFrame.destroy()
+        frame = cont(self, fg_color = BACK_COLOR)
+        self.frames[cont] = frame
+        frame.grid(row=0, column=1, pady=50, sticky=tk.NE)
 
 
 class App(customtkinter.CTk):
@@ -385,7 +468,7 @@ class App(customtkinter.CTk):
 
         register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
-        self.show_frame(LoginFrame, RegisterFrame)
+        self.show_frame(TradeFrame, RegisterFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
