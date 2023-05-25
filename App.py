@@ -3,6 +3,7 @@ import customtkinter
 import re
 import sqlite3
 import hashlib
+import time
 
 #Charts
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -108,6 +109,9 @@ DatCounter = 9000
 
 chartLoad = True
 DataPace = "tick"
+
+ival = 0
+
 
 def changeExchange(ex):
     global exchange
@@ -309,9 +313,9 @@ class ChartFrame(customtkinter.CTkFrame):
                                 exit()
                             return
                         
-                        idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
+                        #idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
 
-                        data = idf2.iloc[0+ival:50+ival]
+                        data = idf.iloc[0+ival:50+ival]
                         ax1.clear()
                         ax2.clear()
                         mpf.plot(data, ax=ax1, volume=ax2, **pkwargs)
@@ -330,29 +334,26 @@ class ChartFrame(customtkinter.CTkFrame):
         #toolbar.update()
         #canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-class LongFrame(customtkinter.CTkFrame):
+class BuyLimitFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-
-        def sellClick(self):
-            master.show_frame(ShortFrame, LongFrame)
         
         # add widgets onto the frame, for example:
 
         self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
-        self.left.grid(row=0, column=0, rowspan=6)
+        self.left.grid(row=0, column=0, rowspan=8)
 
         self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
-        self.left.grid(row=0, column=3, rowspan=6)
+        self.left.grid(row=0, column=3, rowspan=8)
         
 
-        self.signIn = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=False, width=130, height=30)
-        self.signIn.grid(row=0, column=1,padx=10,pady=5)
+        self.buy = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=False, width=130, height=30, command=self.buyClick)
+        self.buy.grid(row=0, column=1,padx=10,pady=5)
 
-        self.signIn = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=130, height=30, command=lambda: sellClick(self))
-        self.signIn.grid(row=0, column=2,padx=10,pady=5)
+        self.sell = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=130, height=30, command=self.sellClick)
+        self.sell.grid(row=0, column=2,padx=10,pady=5)
     
-        self.price = customtkinter.CTkEntry(self, placeholder_text="Price", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.price = customtkinter.CTkEntry(self, placeholder_text="Limit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.price.grid(row=1,column=1, padx=20,pady=5, columnspan=2)
 
         self.volume = customtkinter.CTkEntry(self, placeholder_text="Volume", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
@@ -370,37 +371,57 @@ class LongFrame(customtkinter.CTkFrame):
         self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.takeProfitValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
         
-            
-        
-    def goToSignUp_event(self):
-        app.show_frame(RegisterFrame, LoginFrame)
+        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.confirm_buy)
+        self.confirm.grid(row=7, column=1, columnspan=2, padx=10,pady=10)
+
+
+    def buyClick(self):
+        self.sell.configure(fg_color="#39434D")
+        self.buy.configure(fg_color=MAIN_COLOR)
+        self.confirm.configure(text="SELL", fg_color=MAIN_COLOR)
+
+    def sellClick(self):
+        self.buy.configure(fg_color="#39434D")
+        self.sell.configure(fg_color=SECOND_COLOR)
+        self.confirm.configure(text="SELL", fg_color=SECOND_COLOR)
+
     
+        
+    def confirm_buy(self):
+        print("Henlo")
+
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
 
-class ShortFrame(customtkinter.CTkFrame):
+class TradesInfo(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-
-        def buyClick(self):
-            master.show_frame(LongFrame, ShortFrame)
         
         # add widgets onto the frame, for example:
 
-        self.signIn = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=150, height=30, command=lambda: buyClick(self))
-        self.signIn.grid(row=0, column=0,padx=20,pady=5)
+        self.text = customtkinter.CTkLabel(self, text='Hello')
+        self.text.grid(row=0, column=0, padx=10,pady=10)
 
-        self.signIn = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color=SECOND_COLOR, hover=False, width=150, height=30)
-        self.signIn.grid(row=0, column=1,padx=20,pady=5)
-    
+        self.confirm = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.update)
+        self.confirm.grid(row=1, column=0, padx=10,pady=10)
 
-    
-            
         
-    def goToSignUp_event(self):
-        app.show_frame(RegisterFrame, LoginFrame)
+        data = yf.download(tickers='BTC-USD', period='2d', interval='2m')
+
+        self.Refresher(data)
+
     
+    def Refresher(self, data):
+        global text
+        global ival
+        ival+=1
+        self.text.configure(text=data[50+ival:51+ival].Close)
+        self.after(1000, self.Refresher) # every second...
+        
+    def update(self):
+        self.text.configure(text="New Hello")
+
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
@@ -412,18 +433,18 @@ class TradeFrame(customtkinter.CTkFrame):
         self.chart = ChartFrame(self, fg_color="red")
         self.chart.grid(row=0, column=0, sticky=tk.W)
 
-        self.button = customtkinter.CTkButton(self, width=1280, height=200, text="Quit", command=quit)
-        self.button.grid(row=1, column=0, columnspan=2)
+        self.trades = TradesInfo(self)
+        self.trades.grid(row=1, column=0, columnspan=2)
 
         self.frames = {}
         
-        sell = ShortFrame(self, width=480, height=520, fg_color=BACK_COLOR)
+        buy = BuyLimitFrame(self, width=480, height=520, fg_color=BACK_COLOR)
 
-        self.frames[ShortFrame] = sell
+        self.frames[BuyLimitFrame] = buy
 
-        sell.grid(row=0, column=1)
+        buy.grid(row=0, column=1)
 
-        self.show_frame(LongFrame, ShortFrame)
+        #self.show_frame(BuyLimitFrame, BuyLimitFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
@@ -431,6 +452,7 @@ class TradeFrame(customtkinter.CTkFrame):
         frame = cont(self, fg_color = BACK_COLOR)
         self.frames[cont] = frame
         frame.grid(row=0, column=1, pady=50, sticky=tk.NE)
+
 
 
 class App(customtkinter.CTk):
