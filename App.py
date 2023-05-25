@@ -111,14 +111,17 @@ chartLoad = True
 DataPace = "tick"
 
 ival = 0
+data = yf.download(tickers=exchange, period='2d', interval='2m')
 
 
 def changeExchange(ex):
     global exchange
     global DatCounter
+    global data
 
     exchange = ex
     DatCounter = 9000
+    data = yf.download(tickers=exchange, period='2d', interval='2m')
 
 
 
@@ -287,14 +290,16 @@ class ChartFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, width=800, height=520, **kwargs)
 
-        idf = yf.download(tickers='BTC-USD', period='2d', interval='2m')
+        global data
+
+        data = yf.download(tickers=exchange, period='2d', interval='2m')
 
         mc = mpf.make_marketcolors(up=MAIN_COLOR, down=SECOND_COLOR, edge={'up': MAIN_COLOR, 'down': SECOND_COLOR}, volume=MAIN_COLOR)
         s = mpf.make_mpf_style(marketcolors=mc, base_mpf_style="nightclouds")
         pkwargs=dict(type='candle', mav=(10,20), style=s)
 
 
-        fig, axes = mpf.plot(idf.iloc[0:50], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
+        fig, axes = mpf.plot(data.iloc[0:51], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
         ax1 = axes[0]
         ax2 = axes[2]
 
@@ -306,7 +311,7 @@ class ChartFrame(customtkinter.CTkFrame):
             if chartLoad:
                 if DataPace == "tick":
                     try:
-                        if (50+ival) > len(idf):
+                        if (50+ival) > len(data):
                             print('no more data to plot')
                             ani.event_source.interval *= 3
                             if ani.event_source.interval > 12000:
@@ -315,10 +320,10 @@ class ChartFrame(customtkinter.CTkFrame):
                         
                         #idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
 
-                        data = idf.iloc[0+ival:50+ival]
+                        idf = data.iloc[0+ival:51+ival]
                         ax1.clear()
                         ax2.clear()
-                        mpf.plot(data, ax=ax1, volume=ax2, **pkwargs)
+                        mpf.plot(idf, ax=ax1, volume=ax2, **pkwargs)
                         ax1.set_title(exchange)
                     
                     except Exception as e:
@@ -400,23 +405,23 @@ class TradesInfo(customtkinter.CTkFrame):
         
         # add widgets onto the frame, for example:
 
-        self.text = customtkinter.CTkLabel(self, text='Hello')
+        self.text = customtkinter.CTkLabel(self, text="Hello")
         self.text.grid(row=0, column=0, padx=10,pady=10)
 
         self.confirm = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.update)
         self.confirm.grid(row=1, column=0, padx=10,pady=10)
 
-        
-        data = yf.download(tickers='BTC-USD', period='2d', interval='2m')
-
-        self.Refresher(data)
+        self.Refresher()
 
     
-    def Refresher(self, data):
+    def Refresher(self):
         global text
         global ival
+        global data
         ival+=1
-        self.text.configure(text=data[50+ival:51+ival].Close)
+        output = data[49+ival:50+ival]['Open']
+        output = output.to_list()
+        self.text.configure(text=round(output[0],2))
         self.after(1000, self.Refresher) # every second...
         
     def update(self):
@@ -490,7 +495,7 @@ class App(customtkinter.CTk):
 
         register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
-        self.show_frame(LoginFrame, RegisterFrame)
+        self.show_frame(TradeFrame, RegisterFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
