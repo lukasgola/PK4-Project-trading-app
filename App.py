@@ -490,7 +490,7 @@ class App(customtkinter.CTk):
 
         register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
-        self.show_frame(TradeFrame, RegisterFrame)
+        self.show_frame(LoginFrame, RegisterFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
