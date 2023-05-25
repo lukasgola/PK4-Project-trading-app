@@ -105,13 +105,16 @@ def save_data(username, email, password):
 
 
 exchange = "BTC-USD"
+period = '2d'
+interval = '2m'
+interval_ms = 2000
 DatCounter = 9000
 
 chartLoad = True
 DataPace = "tick"
 
 ival = 0
-data = yf.download(tickers=exchange, period='2d', interval='2m')
+data = yf.download(tickers=exchange, period=period, interval=interval)
 
 
 def changeExchange(ex):
@@ -121,7 +124,26 @@ def changeExchange(ex):
 
     exchange = ex
     DatCounter = 9000
-    data = yf.download(tickers=exchange, period='2d', interval='2m')
+    data = yf.download(tickers=exchange, period=period, interval=interval)
+
+def changePeriod(pe):
+    global period
+    global data
+
+    period = pe
+    data = yf.download(tickers=exchange, period=period, interval=interval)
+
+def changeInterval(int, ms):
+    global interval
+    global interval_ms
+    global data
+
+    interval_ms = ms*1000
+    interval = int
+
+    data = yf.download(tickers=exchange, period=period, interval=interval)
+
+
 
 
 
@@ -291,8 +313,10 @@ class ChartFrame(customtkinter.CTkFrame):
         super().__init__(master, width=800, height=520, **kwargs)
 
         global data
+        global period
+        global interval
 
-        data = yf.download(tickers=exchange, period='2d', interval='2m')
+        data = yf.download(tickers=exchange, period=period, interval=interval)
 
         mc = mpf.make_marketcolors(up=MAIN_COLOR, down=SECOND_COLOR, edge={'up': MAIN_COLOR, 'down': SECOND_COLOR}, volume=MAIN_COLOR)
         s = mpf.make_mpf_style(marketcolors=mc, base_mpf_style="nightclouds")
@@ -307,14 +331,15 @@ class ChartFrame(customtkinter.CTkFrame):
 
             global refreshRate
             global DatCounter
+        
 
             if chartLoad:
                 if DataPace == "tick":
                     try:
                         if (50+ival) > len(data):
                             print('no more data to plot')
-                            ani.event_source.interval *= 3
-                            if ani.event_source.interval > 12000:
+                            self.ani.event_source.interval *= 3
+                            if self.ani.event_source.interval > 12000:
                                 exit()
                             return
                         
@@ -329,7 +354,11 @@ class ChartFrame(customtkinter.CTkFrame):
                     except Exception as e:
                         print("Failed because of", e)
 
-        ani = animation.FuncAnimation(fig, animate, interval=1000)
+
+        #ani = animation.FuncAnimation(fig, animate, interval=interval_ms)
+
+        ani = animation.FuncAnimation(fig, animate, interval=interval_ms)
+
 
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
         canvas.draw()
@@ -418,11 +447,13 @@ class TradesInfo(customtkinter.CTkFrame):
         global text
         global ival
         global data
+        global interval_ms
+
         ival+=1
         output = data[49+ival:50+ival]['Open']
         output = output.to_list()
         self.text.configure(text=round(output[0],2))
-        self.after(1000, self.Refresher) # every second...
+        self.after(interval_ms, self.Refresher) # every second...
         
     def update(self):
         self.text.configure(text="New Hello")
@@ -435,11 +466,21 @@ class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
-        self.chart = ChartFrame(self, fg_color="red")
-        self.chart.grid(row=0, column=0, sticky=tk.W)
+
+        self.charts = {}
+
+        chart = ChartFrame(self)
+
+        self.charts[ChartFrame] = chart
+
+        chart.grid(row=0, column=0, sticky=tk.W)
+
+        
 
         self.trades = TradesInfo(self)
         self.trades.grid(row=1, column=0, columnspan=2)
+
+    
 
         self.frames = {}
         
@@ -450,13 +491,17 @@ class TradeFrame(customtkinter.CTkFrame):
         buy.grid(row=0, column=1)
 
         #self.show_frame(BuyLimitFrame, BuyLimitFrame)
-        
-    def show_frame(self, cont, old): 
-        oldFrame = self.frames[old]
-        oldFrame.destroy()
-        frame = cont(self, fg_color = BACK_COLOR)
-        self.frames[cont] = frame
-        frame.grid(row=0, column=1, pady=50, sticky=tk.NE)
+
+        self.show_chart(ChartFrame, ChartFrame);
+
+    def show_chart(self, cont, old): 
+        print("Printing")
+        oldChart = self.charts[old]
+        oldChart.destroy()
+        chart = cont(self, fg_color = BACK_COLOR)
+        self.charts[cont] = chart
+        chart.grid(row=0, column=0, sticky=tk.W)
+
 
 
 
@@ -466,6 +511,7 @@ class App(customtkinter.CTk):
         self.geometry("1280x720")
         self.title("Trading App")
 
+        test = 1000
         
         self.container = customtkinter.CTkFrame(self, fg_color = BACK_COLOR)
         self.container.pack(side="top", fill="both", expand=True)
@@ -483,19 +529,33 @@ class App(customtkinter.CTk):
         exchangeChoice.add_command(label="BTC-USD", command=lambda: changeExchange("BTC-USD"))
         exchangeChoice.add_command(label="ETH-USD", command=lambda: changeExchange("ETH-USD"))
 
+        periodChoice = tk.Menu(menubar, tearoff=0)
+        periodChoice.add_command(label="2d", command=lambda: changePeriod("2d"))
+
+
+        intervalChoice = tk.Menu(menubar, tearoff=0)
+        intervalChoice.add_command(label="1m", command=lambda: [changeInterval("1m", 1), register.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="2m", command=lambda: [changeInterval("2m", 2), register.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="5m", command=lambda: [changeInterval("5m", 5), register.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="15m", command=lambda: [changeInterval("15m", 15), register.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="30m", command=lambda: [changeInterval("30m", 30), register.show_chart(ChartFrame, ChartFrame)])
+
         menubar.add_cascade(label="Exchange", menu=exchangeChoice)
+        menubar.add_cascade(label="Period", menu=periodChoice)
+        menubar.add_cascade(label="Interval", menu=intervalChoice)
 
         tk.Tk.config(self, menu=menubar)
 
         self.frames = {}
         
-        register = RegisterFrame(self.container, fg_color=BACK_COLOR)
+        register = TradeFrame(self.container, fg_color=BACK_COLOR)
 
         self.frames[RegisterFrame] = register
 
         register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
-        self.show_frame(TradeFrame, RegisterFrame)
+
+        #self.show_frame(TradeFrame, RegisterFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
