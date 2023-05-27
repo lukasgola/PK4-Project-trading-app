@@ -137,11 +137,15 @@ def changeInterval(int, ms):
     global interval
     global interval_ms
     global data
+    global ival
+
 
     interval_ms = ms*1000
     interval = int
+    ival = 0
 
     data = yf.download(tickers=exchange, period=period, interval=interval)
+    print(data)
 
 
 
@@ -316,7 +320,7 @@ class ChartFrame(customtkinter.CTkFrame):
         global period
         global interval
 
-        data = yf.download(tickers=exchange, period=period, interval=interval)
+        #data = yf.download(tickers=exchange, period=period, interval=interval)
 
         mc = mpf.make_marketcolors(up=MAIN_COLOR, down=SECOND_COLOR, edge={'up': MAIN_COLOR, 'down': SECOND_COLOR}, volume=MAIN_COLOR)
         s = mpf.make_mpf_style(marketcolors=mc, base_mpf_style="nightclouds")
@@ -338,8 +342,8 @@ class ChartFrame(customtkinter.CTkFrame):
                     try:
                         if (50+ival) > len(data):
                             print('no more data to plot')
-                            self.ani.event_source.interval *= 3
-                            if self.ani.event_source.interval > 12000:
+                            ani.event_source.interval *= 3
+                            if ani.event_source.interval > 12000:
                                 exit()
                             return
                         
@@ -429,15 +433,17 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         atributte.configure(text_color="red")
 
 class TradesInfo(customtkinter.CTkFrame):
-    def __init__(self, master, **kwargs):
-        super().__init__(master, **kwargs)
+    def __init__(self, master, width, height, **kwargs):
+        super().__init__(master, width, height, **kwargs)
         
         # add widgets onto the frame, for example:
+        self.container = customtkinter.CTkFrame(self, width=1280, height=200, fg_color = "green")
+        self.container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
-        self.text = customtkinter.CTkLabel(self, text="Hello")
+        self.text = customtkinter.CTkLabel(self.container, text="Hello")
         self.text.grid(row=0, column=0, padx=10,pady=10)
 
-        self.confirm = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.update)
+        self.confirm = customtkinter.CTkButton(self.container, text="SELL", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.update)
         self.confirm.grid(row=1, column=0, padx=10,pady=10)
 
         self.Refresher()
@@ -451,8 +457,9 @@ class TradesInfo(customtkinter.CTkFrame):
 
         ival+=1
         output = data[49+ival:50+ival]['Open']
-        output = output.to_list()
-        self.text.configure(text=round(output[0],2))
+        #output = output.to_list()
+        #self.text.configure(text=round(output[0],2))
+        self.text.configure(text=output)
         self.after(interval_ms, self.Refresher) # every second...
         
     def update(self):
@@ -476,9 +483,15 @@ class TradeFrame(customtkinter.CTkFrame):
         chart.grid(row=0, column=0, sticky=tk.W)
 
         
+        
+        self.trades = {}
 
-        self.trades = TradesInfo(self)
-        self.trades.grid(row=1, column=0, columnspan=2)
+        trade = TradesInfo(self, width=1280, height=200, fg_color="red")
+
+        self.trades[TradesInfo] = trade
+
+        trade.grid(row=1, column=0, columnspan=2)
+
 
     
 
@@ -501,6 +514,14 @@ class TradeFrame(customtkinter.CTkFrame):
         chart = cont(self, fg_color = BACK_COLOR)
         self.charts[cont] = chart
         chart.grid(row=0, column=0, sticky=tk.W)
+
+    def show_trades(self, cont, old): 
+        print("Printing")
+        oldTrade = self.trades[old]
+        oldTrade.destroy()
+        trade = cont(self, width=1280, height=200, fg_color = BACK_COLOR)
+        self.trades[cont] = trade
+        trade.grid(row=1, column=0, columnspan=2)
 
 
 
@@ -534,11 +555,11 @@ class App(customtkinter.CTk):
 
 
         intervalChoice = tk.Menu(menubar, tearoff=0)
-        intervalChoice.add_command(label="1m", command=lambda: [changeInterval("1m", 1), register.show_chart(ChartFrame, ChartFrame)])
-        intervalChoice.add_command(label="2m", command=lambda: [changeInterval("2m", 2), register.show_chart(ChartFrame, ChartFrame)])
-        intervalChoice.add_command(label="5m", command=lambda: [changeInterval("5m", 5), register.show_chart(ChartFrame, ChartFrame)])
-        intervalChoice.add_command(label="15m", command=lambda: [changeInterval("15m", 15), register.show_chart(ChartFrame, ChartFrame)])
-        intervalChoice.add_command(label="30m", command=lambda: [changeInterval("30m", 30), register.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="1m", command=lambda: [changeInterval("1m", 1), trade.show_chart(ChartFrame, ChartFrame), trade.show_trades(TradesInfo, TradesInfo)] )
+        intervalChoice.add_command(label="2m", command=lambda: [changeInterval("2m", 2), trade.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="5m", command=lambda: [changeInterval("5m", 5), trade.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="15m", command=lambda: [changeInterval("15m", 15), trade.show_chart(ChartFrame, ChartFrame)])
+        intervalChoice.add_command(label="30m", command=lambda: [changeInterval("30m", 30), trade.show_chart(ChartFrame, ChartFrame)])
 
         menubar.add_cascade(label="Exchange", menu=exchangeChoice)
         menubar.add_cascade(label="Period", menu=periodChoice)
@@ -548,11 +569,11 @@ class App(customtkinter.CTk):
 
         self.frames = {}
         
-        register = TradeFrame(self.container, fg_color=BACK_COLOR)
+        trade = TradeFrame(self.container, fg_color=BACK_COLOR)
 
-        self.frames[RegisterFrame] = register
+        self.frames[TradeFrame] = trade
 
-        register.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
+        trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
         #self.show_frame(TradeFrame, RegisterFrame)
