@@ -438,13 +438,21 @@ class TradesInfo(customtkinter.CTkFrame):
         
         # add widgets onto the frame, for example:
         self.container = customtkinter.CTkFrame(self, width=1280, height=200, fg_color = "green")
-        self.container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+        self.container.place(relx=0, rely=0, anchor=tk.NW)
 
-        self.text = customtkinter.CTkLabel(self.container, text="Hello")
-        self.text.grid(row=0, column=0, padx=10,pady=10)
+        self.verses = {}
+        verse = customtkinter.CTkFrame(self.container, width=1280, fg_color = BACK_COLOR)
+        self.verses[customtkinter.CTkFrame] = verse
+        verse.grid(row=0, column=0, sticky=tk.NW)
 
-        self.confirm = customtkinter.CTkButton(self.container, text="SELL", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.update)
-        self.confirm.grid(row=1, column=0, padx=10,pady=10)
+        self.date = customtkinter.CTkLabel(verse, text="Hello")
+        self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
+
+        self.price = customtkinter.CTkLabel(verse, text="Hello")
+        self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
+
+        self.signIn = customtkinter.CTkButton(self.container, text="Sign In", font=("Roboto", 16), fg_color=MAIN_COLOR, width=300, height=50, command=self.add_transaction)
+        self.signIn.grid(row=1, column=0, sticky=tk.NW)
 
         self.Refresher()
 
@@ -457,11 +465,22 @@ class TradesInfo(customtkinter.CTkFrame):
 
         ival+=1
         output = data[49+ival:50+ival]['Open']
-        #output = output.to_list()
-        #self.text.configure(text=round(output[0],2))
-        self.text.configure(text=output)
+        output = output.to_list()
+        self.price.configure(text=round(output[0],2))
+        self.price.configure(text=output)
         self.after(interval_ms, self.Refresher) # every second...
-        
+
+    def add_transaction(self):
+
+        new = customtkinter.CTkFrame(self.container, width=1280, height=200, fg_color = BACK_COLOR)
+        self.verses[customtkinter.CTkFrame] = new
+        new.grid(row=2, column=0, sticky=tk.NW)
+        self.date = customtkinter.CTkLabel(new, text="Hello")
+        self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
+
+        self.price = customtkinter.CTkLabel(new, text="Hello")
+        self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
+
     def update(self):
         self.text.configure(text="New Hello")
 
@@ -576,7 +595,7 @@ class App(customtkinter.CTk):
         trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
-        self.show_frame(LoginFrame, TradeFrame)
+        self.show_frame(TradeFrame, TradeFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
