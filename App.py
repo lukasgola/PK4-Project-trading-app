@@ -5,6 +5,8 @@ import sqlite3
 import hashlib
 import time
 
+from datetime import datetime
+
 #Charts
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import matplotlib.animation as animation
@@ -110,10 +112,11 @@ interval = '2m'
 interval_ms = 2000
 DatCounter = 9000
 
+current_price = 0
+
 chartLoad = True
 DataPace = "tick"
 
-transactions = 0
 
 ival = 0
 data = yf.download(tickers=exchange, period=period, interval=interval)
@@ -416,7 +419,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.takeProfitValue.grid(row=7,column=1, padx=20,pady=5, columnspan=2)
         
-        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command= self.confirm)
+        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command= self.trade.add_transaction())
         self.confirm.grid(row=8, column=1, columnspan=2, padx=10,pady=10)
 
         self.Refresher()
@@ -427,17 +430,14 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         global ival
         global data
         global interval_ms
+        global current_price
 
         ival+=1
         output = data[49+ival:50+ival]['Open']
         output = output.to_list()
+        current_price = round(output[0],2)
         self.priceRef.configure(text=round(output[0],2))
         self.after(interval_ms, self.Refresher) # every second...
-
-    def confirm(self):
-        global transactions
-        self.trade.add_transaction(transactions)
-        transactions = transactions + 1
 
     def buyClick(self):
         self.sell.configure(fg_color="#39434D")
@@ -461,25 +461,29 @@ class TradesInfo(customtkinter.CTkFrame):
         super().__init__(master, width, height, **kwargs)
         
         # add widgets onto the frame, for example:
-        self.container = customtkinter.CTkFrame(self, width=1280, height=200, fg_color = "green")
+        self.container = customtkinter.CTkFrame(self, width=1280, height=200, fg_color = BACK_COLOR)
         self.container.place(relx=0, rely=0, anchor=tk.NW)
 
         self.verses = {}
         verse = customtkinter.CTkFrame(self.container, width=1280, fg_color = BACK_COLOR)
         self.verses[customtkinter.CTkFrame] = verse
-        verse.grid(row=0, column=0, sticky=tk.NW)
+        #verse.grid(row=0, column=0, sticky=tk.NW)
+        verse.place()
 
 
 
-    def add_transaction(self, number):
+    def add_transaction(self):
 
-        new = customtkinter.CTkFrame(self.container, width=1280, height=200, fg_color = BACK_COLOR)
+        global current_price
+
+        new = customtkinter.CTkFrame(self.container, width=1280, height=200, fg_color = "#39434D")
         self.verses[customtkinter.CTkFrame] = new
-        new.grid(row=number, column=0, sticky=tk.NW)
-        self.date = customtkinter.CTkLabel(new, text=number)
+        #new.grid(row=0, column=0, padx=20, sticky=tk.NW)
+        new.pack(side = tk.TOP)
+        self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
 
-        self.price = customtkinter.CTkLabel(new, text="Hello")
+        self.price = customtkinter.CTkLabel(new, text=current_price)
         self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
 
 
@@ -507,7 +511,7 @@ class TradeFrame(customtkinter.CTkFrame):
         
         self.trades = {}
 
-        trade = TradesInfo(self, width=1280, height=200, fg_color="red")
+        trade = TradesInfo(self, width=1280, height=200, fg_color=BACK_COLOR)
 
         self.trades[TradesInfo] = trade
 
