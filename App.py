@@ -113,6 +113,8 @@ DatCounter = 9000
 chartLoad = True
 DataPace = "tick"
 
+transactions = 0
+
 ival = 0
 data = yf.download(tickers=exchange, period=period, interval=interval)
 
@@ -373,45 +375,69 @@ class ChartFrame(customtkinter.CTkFrame):
         #canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 class BuyLimitFrame(customtkinter.CTkFrame):
-    def __init__(self, master, **kwargs):
+    def __init__(self, master, trade, **kwargs):
         super().__init__(master, **kwargs)
         
         # add widgets onto the frame, for example:
+
+        self.trade = trade
 
         self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
         self.left.grid(row=0, column=0, rowspan=8)
 
         self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
         self.left.grid(row=0, column=3, rowspan=8)
-        
+
+
+        self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
+        self.priceRef.grid(row=0, column=1)
 
         self.buy = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=False, width=130, height=30, command=self.buyClick)
-        self.buy.grid(row=0, column=1,padx=10,pady=5)
+        self.buy.grid(row=1, column=1,padx=10,pady=5)
 
         self.sell = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=130, height=30, command=self.sellClick)
-        self.sell.grid(row=0, column=2,padx=10,pady=5)
+        self.sell.grid(row=1, column=2,padx=10,pady=5)
     
         self.price = customtkinter.CTkEntry(self, placeholder_text="Limit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.price.grid(row=1,column=1, padx=20,pady=5, columnspan=2)
+        self.price.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
 
         self.volume = customtkinter.CTkEntry(self, placeholder_text="Volume", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.volume.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
+        self.volume.grid(row=3,column=1, padx=20,pady=5, columnspan=2)
 
         self.stopLoss = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
-        self.stopLoss.grid(row=3, column=1, padx=20, sticky=tk.W)
+        self.stopLoss.grid(row=4, column=1, padx=20, sticky=tk.W)
 
         self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.stopLossValue.grid(row=4,column=1, padx=20,pady=5, columnspan=2)
+        self.stopLossValue.grid(row=5,column=1, padx=20,pady=5, columnspan=2)
 
         self.takeProfit = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
-        self.takeProfit.grid(row=5, column=1, padx=20, sticky=tk.W)
+        self.takeProfit.grid(row=6, column=1, padx=20, sticky=tk.W)
 
         self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.takeProfitValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
+        self.takeProfitValue.grid(row=7,column=1, padx=20,pady=5, columnspan=2)
         
-        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.confirm_buy)
-        self.confirm.grid(row=7, column=1, columnspan=2, padx=10,pady=10)
+        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command= self.confirm)
+        self.confirm.grid(row=8, column=1, columnspan=2, padx=10,pady=10)
 
+        self.Refresher()
+
+    
+    def Refresher(self):
+        global text
+        global ival
+        global data
+        global interval_ms
+
+        ival+=1
+        output = data[49+ival:50+ival]['Open']
+        output = output.to_list()
+        self.priceRef.configure(text=round(output[0],2))
+        self.after(interval_ms, self.Refresher) # every second...
+
+    def confirm(self):
+        global transactions
+        self.trade.add_transaction(transactions)
+        transactions = transactions + 1
 
     def buyClick(self):
         self.sell.configure(fg_color="#39434D")
@@ -424,9 +450,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.confirm.configure(text="SELL", fg_color=SECOND_COLOR)
 
     
-        
-    def confirm_buy(self):
-        print("Henlo")
+    
 
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
@@ -445,41 +469,19 @@ class TradesInfo(customtkinter.CTkFrame):
         self.verses[customtkinter.CTkFrame] = verse
         verse.grid(row=0, column=0, sticky=tk.NW)
 
-        self.date = customtkinter.CTkLabel(verse, text="Hello")
-        self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
 
-        self.price = customtkinter.CTkLabel(verse, text="Hello")
-        self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
 
-        self.signIn = customtkinter.CTkButton(self.container, text="Sign In", font=("Roboto", 16), fg_color=MAIN_COLOR, width=300, height=50, command=self.add_transaction)
-        self.signIn.grid(row=1, column=0, sticky=tk.NW)
-
-        self.Refresher()
-
-    
-    def Refresher(self):
-        global text
-        global ival
-        global data
-        global interval_ms
-
-        ival+=1
-        output = data[49+ival:50+ival]['Open']
-        output = output.to_list()
-        self.price.configure(text=round(output[0],2))
-        self.price.configure(text=output)
-        self.after(interval_ms, self.Refresher) # every second...
-
-    def add_transaction(self):
+    def add_transaction(self, number):
 
         new = customtkinter.CTkFrame(self.container, width=1280, height=200, fg_color = BACK_COLOR)
         self.verses[customtkinter.CTkFrame] = new
-        new.grid(row=2, column=0, sticky=tk.NW)
-        self.date = customtkinter.CTkLabel(new, text="Hello")
+        new.grid(row=number, column=0, sticky=tk.NW)
+        self.date = customtkinter.CTkLabel(new, text=number)
         self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
 
         self.price = customtkinter.CTkLabel(new, text="Hello")
         self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
+
 
     def update(self):
         self.text.configure(text="New Hello")
@@ -516,7 +518,7 @@ class TradeFrame(customtkinter.CTkFrame):
 
         self.frames = {}
         
-        buy = BuyLimitFrame(self, width=480, height=520, fg_color=BACK_COLOR)
+        buy = BuyLimitFrame(self, trade, width=480, height=520, fg_color=BACK_COLOR)
 
         self.frames[BuyLimitFrame] = buy
 
@@ -525,6 +527,7 @@ class TradeFrame(customtkinter.CTkFrame):
         #self.show_frame(BuyLimitFrame, BuyLimitFrame)
 
         self.show_chart(ChartFrame, ChartFrame);
+
 
     def show_chart(self, cont, old): 
         print("Printing")
@@ -550,8 +553,6 @@ class App(customtkinter.CTk):
         super().__init__()
         self.geometry("1280x720")
         self.title("Trading App")
-
-        test = 1000
         
         self.container = customtkinter.CTkFrame(self, fg_color = BACK_COLOR)
         self.container.pack(side="top", fill="both", expand=True)
