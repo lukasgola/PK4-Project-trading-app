@@ -108,8 +108,8 @@ def save_data(username, email, password):
 
 exchange = "BTC-USD"
 period = '2d'
-interval = '2m'
-interval_ms = 2000
+interval = '1m'
+interval_ms = 1000
 DatCounter = 9000
 
 current_price = 0
@@ -151,7 +151,7 @@ def changeInterval(int, ms):
 
     interval_ms = ms*1000
     interval = int
-    #ival = 0
+    ival = 0
 
     data = yf.download(tickers=exchange, period=period, interval=interval)
 
@@ -363,17 +363,17 @@ class ChartFrame(customtkinter.CTkFrame):
                         
                         #idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
                         if interval_ms == 1000:
-                            idf = data.iloc[688+ival:738+ival]
-                            print(data.iloc[737+ival:738+ival])
+                            idf = data.iloc[690+ival:740+ival]
+                            print(data.iloc[739+ival:740+ival])
                         if interval_ms == 2000:
-                            idf = data.iloc[325+ival:375+ival]
-                            print(data.iloc[374+ival:375+ival])
+                            idf = data.iloc[327+ival:377+ival]
+                            print(data.iloc[376+ival:377+ival])
                         if interval_ms == 5000:
-                            idf = data.iloc[100+ival:150+ival]
-                            print(data.iloc[149+ival:150+ival])
+                            idf = data.iloc[102+ival:152+ival]
+                            print(data.iloc[151+ival:152+ival])
                         if interval_ms == 15000:
-                            idf = data.iloc[0+ival:50+ival]
-                            print(data.iloc[49+ival:50+ival])
+                            idf = data.iloc[1+ival:51+ival]
+                            print(data.iloc[50+ival:51+ival])
                         ax1.clear()
                         ax2.clear()
                         mpf.plot(idf, ax=ax1, volume=ax2, **pkwargs)
@@ -508,11 +508,11 @@ class TradesInfo(customtkinter.CTkFrame):
         global interval_ms
         global current_price
 
-        output = refresher_data[737+ival:738+ival]['Open']
+        output = refresher_data[738+ival:739+ival]['Open']
         output = output.to_list()
         if self.verses:
             for t in self.verses:
-                diff = round(output[0],2)-round(self.tradePrice,2)
+                diff = round(output[0] - self.tradePrice,2)
                 color = "white"
                 if diff > 0:
                     color = MAIN_COLOR
@@ -542,7 +542,7 @@ class TradesInfo(customtkinter.CTkFrame):
         self.cur_price = customtkinter.CTkLabel(new, text=current_price)
         self.cur_price.grid(row=0, column=2, padx=20, sticky=tk.NW)
 
-        self.priceDiff = customtkinter.CTkLabel(new, text="")
+        self.priceDiff = customtkinter.CTkLabel(new, text="0.00")
         self.priceDiff.grid(row=0, column=3, padx=20, sticky=tk.NW)
 
 
