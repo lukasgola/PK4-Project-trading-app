@@ -193,6 +193,7 @@ class LoginFrame(customtkinter.CTkFrame):
         passwordText = self.password.get()
 
         if check_data(emailText, passwordText):
+            user.setUser()
             app.show_frame(TradeFrame, LoginFrame)
         if not check_email(emailText):
             self.show_message(self.emailError, "Email not found")
@@ -658,7 +659,7 @@ class App(customtkinter.CTk):
         trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
-        #self.show_frame(TradeFrame, TradeFrame)
+        self.show_frame(LoginFrame, TradeFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
