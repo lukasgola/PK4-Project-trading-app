@@ -150,7 +150,6 @@ def changeInterval(int, ms):
     ival = 0
 
     data = yf.download(tickers=exchange, period=period, interval=interval)
-    print(interval_ms)
 
 
 
@@ -622,7 +621,7 @@ class App(customtkinter.CTk):
         trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
-        self.show_frame(TradeFrame, TradeFrame)
+        #self.show_frame(TradeFrame, TradeFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
