@@ -121,6 +121,10 @@ DataPace = "tick"
 ival = 0
 data = yf.download(tickers=exchange, period=period, interval=interval)
 
+refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
+
+print(data)
+
 def changeExchange(ex):
     global exchange
     global DatCounter
@@ -147,11 +151,9 @@ def changeInterval(int, ms):
 
     interval_ms = ms*1000
     interval = int
-    ival = 0
+    #ival = 0
 
     data = yf.download(tickers=exchange, period=period, interval=interval)
-
-
 
 
 
@@ -331,8 +333,15 @@ class ChartFrame(customtkinter.CTkFrame):
         s = mpf.make_mpf_style(marketcolors=mc, base_mpf_style="nightclouds")
         pkwargs=dict(type='candle', mav=(10,20), style=s)
 
+        if interval_ms == 1000:
+            fig, axes = mpf.plot(data.iloc[690:740], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
+        if interval_ms == 2000:
+            fig, axes = mpf.plot(data.iloc[325:375], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
+        if interval_ms == 5000:
+            fig, axes = mpf.plot(data.iloc[100:150], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
+        if interval_ms == 15000:
+            fig, axes = mpf.plot(data.iloc[0:51], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
 
-        fig, axes = mpf.plot(data.iloc[0:51], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
         ax1 = axes[0]
         ax2 = axes[2]
 
@@ -353,8 +362,18 @@ class ChartFrame(customtkinter.CTkFrame):
                             return
                         
                         #idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
-
-                        idf = data.iloc[0+ival:51+ival]
+                        if interval_ms == 1000:
+                            idf = data.iloc[688+ival:738+ival]
+                            print(data.iloc[737+ival:738+ival])
+                        if interval_ms == 2000:
+                            idf = data.iloc[325+ival:375+ival]
+                            print(data.iloc[374+ival:375+ival])
+                        if interval_ms == 5000:
+                            idf = data.iloc[100+ival:150+ival]
+                            print(data.iloc[149+ival:150+ival])
+                        if interval_ms == 15000:
+                            idf = data.iloc[0+ival:50+ival]
+                            print(data.iloc[49+ival:50+ival])
                         ax1.clear()
                         ax2.clear()
                         mpf.plot(idf, ax=ax1, volume=ax2, **pkwargs)
@@ -390,8 +409,11 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.left.grid(row=0, column=3, rowspan=8)
 
 
-        self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
-        self.priceRef.grid(row=0, column=1)
+        #self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
+        #self.priceRef.grid(row=0, column=1)
+
+        self.dateRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
+        self.dateRef.grid(row=0, column=1, columnspan=2)
 
         self.buy = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=False, width=130, height=30, command=self.buyClick)
         self.buy.grid(row=1, column=1,padx=10,pady=5)
@@ -426,15 +448,21 @@ class BuyLimitFrame(customtkinter.CTkFrame):
     def Refresher(self):
         global text
         global ival
-        global data
+        global refresher_data
         global interval_ms
         global current_price
 
         ival+=1
-        output = data[49+ival:50+ival]['Open']
+        output = refresher_data[737+ival:738+ival]['Open']
         output = output.to_list()
         current_price = round(output[0],2)
-        self.priceRef.configure(text=round(output[0],2))
+        #self.priceRef.configure(text=round(output[0],2))
+
+        date = refresher_data[737+ival:738+ival].Open
+
+        #date = date.to_list()
+        self.dateRef.configure(text=date)
+
         self.after(1000, self.Refresher) # every second...
 
     def buyClick(self):
@@ -476,15 +504,22 @@ class TradesInfo(customtkinter.CTkFrame):
     def Refresher(self):
         global text
         global ival
-        global data
+        global refresher_data
         global interval_ms
+        global current_price
 
-        ival+=1
-        output = data[49+ival:50+ival]['Open']
+        output = refresher_data[737+ival:738+ival]['Open']
         output = output.to_list()
         if self.verses:
             for t in self.verses:
-                self.priceDiff.configure(text=round(output[0],2)-round(self.tradePrice,2))
+                diff = round(output[0],2)-round(self.tradePrice,2)
+                color = "white"
+                if diff > 0:
+                    color = MAIN_COLOR
+                else:
+                    color= SECOND_COLOR
+                self.priceDiff.configure(text=diff, text_color=color)
+                self.cur_price.configure(text=round(output[0],2))
 
         self.after(1000, self.Refresher) # every second...
 
@@ -504,8 +539,11 @@ class TradesInfo(customtkinter.CTkFrame):
         self.price = customtkinter.CTkLabel(new, text=current_price)
         self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
 
+        self.cur_price = customtkinter.CTkLabel(new, text=current_price)
+        self.cur_price.grid(row=0, column=2, padx=20, sticky=tk.NW)
+
         self.priceDiff = customtkinter.CTkLabel(new, text="")
-        self.priceDiff.grid(row=0, column=2, padx=20, sticky=tk.NW)
+        self.priceDiff.grid(row=0, column=3, padx=20, sticky=tk.NW)
 
 
     def update(self):
@@ -604,7 +642,6 @@ class App(customtkinter.CTk):
         intervalChoice.add_command(label="2m", command=lambda: [changeInterval("2m", 2), trade.show_chart(ChartFrame, ChartFrame)])
         intervalChoice.add_command(label="5m", command=lambda: [changeInterval("5m", 5), trade.show_chart(ChartFrame, ChartFrame)])
         intervalChoice.add_command(label="15m", command=lambda: [changeInterval("15m", 15), trade.show_chart(ChartFrame, ChartFrame)])
-        intervalChoice.add_command(label="30m", command=lambda: [changeInterval("30m", 30), trade.show_chart(ChartFrame, ChartFrame)])
 
         menubar.add_cascade(label="Exchange", menu=exchangeChoice)
         menubar.add_cascade(label="Period", menu=periodChoice)
