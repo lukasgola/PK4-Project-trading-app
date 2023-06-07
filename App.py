@@ -86,7 +86,21 @@ def check_password(password):
     else:
         connection.close()
         return False
-    
+
+def get_username(email):
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT username FROM userdata WHERE email = ?",(email,))
+
+    usr = cursor.fetchall()
+
+    if usr:
+        connection.close()
+        return usr[0]
+    else:
+        connection.close()
+        return "None"
 
 def save_data(username, email, password):
     connection = sqlite3.connect("userdata.db")
@@ -191,9 +205,11 @@ class LoginFrame(customtkinter.CTkFrame):
     def signIn_event(self):
         emailText = self.email.get()
         passwordText = self.password.get()
+        
 
         if check_data(emailText, passwordText):
-            user.setUser()
+            user.setUser(get_username(emailText), emailText, passwordText)
+            print(user.getUsername())
             app.show_frame(TradeFrame, LoginFrame)
         if not check_email(emailText):
             self.show_message(self.emailError, "Email not found")
@@ -209,7 +225,6 @@ class LoginFrame(customtkinter.CTkFrame):
     def show_message(self, atributte, error='', color='black'):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
-
 
 class RegisterFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -317,7 +332,6 @@ class RegisterFrame(customtkinter.CTkFrame):
         
         self.show_message(self.passwordMatchError)
         return True
-
 
 class ChartFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -488,9 +502,10 @@ class TradesInfo(customtkinter.CTkFrame):
         super().__init__(master, width, height, **kwargs)
         
         self.tradePrice = 0
+        self.width = width
 
         # add widgets onto the frame, for example:
-        self.container = customtkinter.CTkScrollableFrame(self, width=1280, height=200, fg_color = BACK_COLOR)
+        self.container = customtkinter.CTkScrollableFrame(self, width=width, height=height, fg_color = BACK_COLOR)
         self.container.place(relx=0, rely=0, anchor=tk.NW)
 
         self.verses = {}
@@ -531,7 +546,7 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.tradePrice = current_price
 
-        new = customtkinter.CTkFrame(self.container, width=1280, fg_color = "#39434D")
+        new = customtkinter.CTkFrame(self.container, width=self.width, fg_color = "#39434D")
         self.verses[customtkinter.CTkFrame] = new
         new.pack(side = tk.TOP, pady = 5, padx = 10, anchor= tk.W)
         self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
@@ -554,6 +569,24 @@ class TradesInfo(customtkinter.CTkFrame):
         atributte.configure(text=error)
         atributte.configure(text_color="red")
 
+
+class UserInfo(customtkinter.CTkFrame):
+    def __init__(self, master, width, height, **kwargs):
+        super().__init__(master, width, height, **kwargs)
+    
+
+        # add widgets onto the frame, for example:
+        self.container = customtkinter.CTkFrame(self, width=width, height=height, fg_color = BACK_COLOR)
+        self.container.place(relx=0, rely=0, anchor=tk.NW)
+
+
+        self.username = customtkinter.CTkLabel(self, text=user.getUsername(), font=("Roboto", 16, "bold"))
+
+        self.email = customtkinter.CTkLabel(self, text=user.getEmail(), font=("Roboto", 16, "bold"))
+
+
+
+
 class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -571,11 +604,21 @@ class TradeFrame(customtkinter.CTkFrame):
         
         self.trades = {}
 
-        trade = TradesInfo(self, width=1280, height=200, fg_color=BACK_COLOR)
+        trade = TradesInfo(self, width=800, height=200, fg_color=BACK_COLOR)
 
         self.trades[TradesInfo] = trade
 
-        trade.grid(row=1, column=0, columnspan=2)
+        trade.grid(row=1, column=0)
+
+
+
+        self.users = {}
+
+        user = UserInfo(self, width=480, height=200, fg_color=BACK_COLOR)
+
+        self.users[UserInfo] = user
+        
+        user.grid(row=1, column=1)
 
 
     
