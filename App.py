@@ -424,11 +424,11 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.left.grid(row=0, column=3, rowspan=8)
 
 
-        #self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
-        #self.priceRef.grid(row=0, column=1)
+        self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
+        self.priceRef.grid(row=0, column=1)
 
-        self.dateRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
-        self.dateRef.grid(row=0, column=1, columnspan=2)
+        #self.dateRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
+        #self.dateRef.grid(row=0, column=1, columnspan=2)
 
         self.buy = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=False, width=130, height=30, command=self.buyClick)
         self.buy.grid(row=1, column=1,padx=10,pady=5)
@@ -471,12 +471,12 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         output = refresher_data[737+ival:738+ival]['Open']
         output = output.to_list()
         current_price = round(output[0],2)
-        #self.priceRef.configure(text=round(output[0],2))
+        self.priceRef.configure(text=round(output[0],2))
 
-        date = refresher_data[737+ival:738+ival].Open
+        #date = refresher_data[737+ival:738+ival]['Datetime']
 
         #date = date.to_list()
-        self.dateRef.configure(text=date)
+        #self.dateRef.configure(text=date)
 
         self.after(1000, self.Refresher) # every second...
 
@@ -577,13 +577,32 @@ class UserInfo(customtkinter.CTkFrame):
 
         # add widgets onto the frame, for example:
         self.container = customtkinter.CTkFrame(self, width=width, height=height, fg_color = BACK_COLOR)
-        self.container.place(relx=0, rely=0, anchor=tk.NW)
+        self.container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
 
-        self.username = customtkinter.CTkLabel(self, text=user.getUsername(), font=("Roboto", 16, "bold"))
+        self.username = customtkinter.CTkLabel(self.container, text=user.getUsername(), font=("Roboto", 16, "bold"))
+        self.username.grid(row=0, column=0,padx=10,pady=5)
 
-        self.email = customtkinter.CTkLabel(self, text=user.getEmail(), font=("Roboto", 16, "bold"))
+        self.email = customtkinter.CTkLabel(self.container, text=user.getEmail(), font=("Roboto", 16, "bold"))
+        self.email.grid(row=1, column=0,padx=10,pady=5)
 
+        self.fiat = customtkinter.CTkLabel(self.container, text="Fiat", font=("Roboto", 16, "bold"))
+        self.fiat.grid(row=2, column=0,padx=10,pady=5)
+
+        self.crypto = customtkinter.CTkLabel(self.container, text="Stocks", font=("Roboto", 16, "bold"))
+        self.crypto.grid(row=3, column=0,padx=10,pady=5)
+
+        self.stocks = customtkinter.CTkLabel(self.container, text="Crypto", font=("Roboto", 16, "bold"))
+        self.stocks.grid(row=4, column=0,padx=10,pady=5)
+
+        self.fiatValue = customtkinter.CTkLabel(self.container, text="0.00", font=("Roboto", 16, "bold"))
+        self.fiatValue.grid(row=2, column=1,padx=10,pady=5)
+
+        self.cryptoValue = customtkinter.CTkLabel(self.container, text="0.00", font=("Roboto", 16, "bold"))
+        self.cryptoValue.grid(row=3, column=1,padx=10,pady=5)
+
+        self.stocksValue = customtkinter.CTkLabel(self.container, text="0.00", font=("Roboto", 16, "bold"))
+        self.stocksValue.grid(row=4, column=1,padx=10,pady=5)
 
 
 
@@ -702,7 +721,7 @@ class App(customtkinter.CTk):
         trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
-        self.show_frame(LoginFrame, TradeFrame)
+        self.show_frame(TradeFrame, TradeFrame)
         
     def show_frame(self, cont, old): 
         oldFrame = self.frames[old]
