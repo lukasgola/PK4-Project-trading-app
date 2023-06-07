@@ -1,5 +1,6 @@
 class Product:
-    def __init__(self, bP, bD, v):
+    def __init__(self, t, bP, bD, v):
+        self.type = t
         self.buyPrice = bP
         self.buyDate = bD
         self.volume = v

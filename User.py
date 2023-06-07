@@ -5,7 +5,7 @@ class User:
         self.username = "undefined"
         self.email = "undefined"
         self.password = "undefined"
-        self.wallet = Wallet(0)
+        self.wallet = Wallet()
         
 
     def setUser(self, u, e, p):

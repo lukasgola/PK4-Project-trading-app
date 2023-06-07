@@ -415,6 +415,8 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         
         # add widgets onto the frame, for example:
 
+        self.actprice  = tk.StringVar(master=self, value=0, name="name")
+
         self.trade = trade
 
         self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
@@ -424,8 +426,8 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.left.grid(row=0, column=3, rowspan=8)
 
 
-        self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
-        self.priceRef.grid(row=0, column=1)
+        #self.priceRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
+        #self.priceRef.grid(row=0, column=1)
 
         #self.dateRef = customtkinter.CTkLabel(self, text="Hello", font=("Roboto", 16, "bold"))
         #self.dateRef.grid(row=0, column=1, columnspan=2)
@@ -436,7 +438,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.sell = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=130, height=30, command=self.sellClick)
         self.sell.grid(row=1, column=2,padx=10,pady=5)
     
-        self.price = customtkinter.CTkEntry(self, placeholder_text="Limit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.price = customtkinter.CTkEntry(self, textvariable=self.actprice, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.price.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
 
         self.volume = customtkinter.CTkEntry(self, placeholder_text="Volume", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
@@ -471,7 +473,8 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         output = refresher_data[737+ival:738+ival]['Open']
         output = output.to_list()
         current_price = round(output[0],2)
-        self.priceRef.configure(text=round(output[0],2))
+        #self.priceRef.configure(text=round(output[0],2))
+        self.actprice.set(value=round(output[0],2))
 
         #date = refresher_data[737+ival:738+ival]['Datetime']
 
