@@ -122,8 +122,8 @@ def save_data(username, email, password):
 
 exchange = "BTC-USD"
 period = '2d'
-interval = '1m'
-interval_ms = 1000
+interval = '2m'
+interval_ms = 2000
 DatCounter = 9000
 
 current_price = 0
@@ -347,16 +347,18 @@ class ChartFrame(customtkinter.CTkFrame):
         mc = mpf.make_marketcolors(up=MAIN_COLOR, down=SECOND_COLOR, edge={'up': MAIN_COLOR, 'down': SECOND_COLOR}, volume=MAIN_COLOR)
         s = mpf.make_mpf_style(marketcolors=mc, base_mpf_style="nightclouds")
         pkwargs=dict(type='candle', mav=(10,20), style=s)
-
+        
         if interval_ms == 1000:
             fig, axes = mpf.plot(data.iloc[690:740], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
         if interval_ms == 2000:
-            fig, axes = mpf.plot(data.iloc[325:375], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
+            fig, axes = mpf.plot(data.iloc[325:375], figsize=(4,3),panel_ratios=(3,1), returnfig=True,volume=True,**pkwargs)
         if interval_ms == 5000:
             fig, axes = mpf.plot(data.iloc[100:150], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
         if interval_ms == 15000:
             fig, axes = mpf.plot(data.iloc[0:51], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
 
+
+            
         ax1 = axes[0]
         ax2 = axes[2]
 
@@ -376,7 +378,7 @@ class ChartFrame(customtkinter.CTkFrame):
                                 exit()
                             return
                         
-                        #idf2 = yf.download(tickers=exchange, period='2d', interval='2m')
+                        
                         if interval_ms == 1000:
                             idf = data.iloc[690+ival:740+ival]
                             print(data.iloc[739+ival:740+ival])
@@ -389,6 +391,8 @@ class ChartFrame(customtkinter.CTkFrame):
                         if interval_ms == 15000:
                             idf = data.iloc[1+ival:51+ival]
                             print(data.iloc[50+ival:51+ival])
+
+
                         ax1.clear()
                         ax2.clear()
                         mpf.plot(idf, ax=ax1, volume=ax2, **pkwargs)
@@ -398,7 +402,7 @@ class ChartFrame(customtkinter.CTkFrame):
                         print("Failed because of", e)
 
 
-        ani = animation.FuncAnimation(fig, animate, interval=interval_ms)
+        #ani = animation.FuncAnimation(fig, animate, interval=interval_ms)
 
 
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
@@ -415,7 +419,11 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         
         # add widgets onto the frame, for example:
 
-        self.actprice  = tk.StringVar(master=self, value=0, name="name")
+        self.actprice  = tk.DoubleVar(master=self, value=0)
+
+        self.toPay  = tk.DoubleVar(master=self, value=0)
+
+        self.volumeValue = tk.DoubleVar(master=self, value=0)
 
         self.trade = trade
 
@@ -441,23 +449,32 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.price = customtkinter.CTkEntry(self, textvariable=self.actprice, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.price.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
 
-        self.volume = customtkinter.CTkEntry(self, placeholder_text="Volume", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        #self.volume = customtkinter.CTkEntry(self, textvariable=self.volumeValue, placeholder_text="Volume", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        #self.volume.grid(row=3,column=1, padx=20,pady=5, columnspan=2)
+
+        self.volume = customtkinter.CTkSlider(self, from_=0, to=100, variable=self.volumeValue, command=self.slider_event)
         self.volume.grid(row=3,column=1, padx=20,pady=5, columnspan=2)
 
+        self.volumeShow = customtkinter.CTkLabel(self, textvariable=self.volumeValue, text=user.getEmail(), font=("Roboto", 16, "bold"))
+        self.volumeShow.grid(row=4, column=1,padx=10, columnspan=2, pady=5)
+
         self.stopLoss = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
-        self.stopLoss.grid(row=4, column=1, padx=20, sticky=tk.W)
+        self.stopLoss.grid(row=5, column=1, padx=20, sticky=tk.W)
 
         self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.stopLossValue.grid(row=5,column=1, padx=20,pady=5, columnspan=2)
+        self.stopLossValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
 
         self.takeProfit = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
-        self.takeProfit.grid(row=6, column=1, padx=20, sticky=tk.W)
+        self.takeProfit.grid(row=7, column=1, padx=20, sticky=tk.W)
 
         self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.takeProfitValue.grid(row=7,column=1, padx=20,pady=5, columnspan=2)
+        self.takeProfitValue.grid(row=8,column=1, padx=20,pady=5, columnspan=2)
+
+        self.needToPay = customtkinter.CTkEntry(self, textvariable=self.toPay, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.needToPay.grid(row=9,column=1, padx=20,pady=5, columnspan=2)
         
         self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command= lambda: self.trade.add_transaction())
-        self.confirm.grid(row=8, column=1, columnspan=2, padx=10,pady=10)
+        self.confirm.grid(row=10, column=1, columnspan=2, padx=10,pady=10)
 
         self.Refresher()
 
@@ -474,7 +491,8 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         output = output.to_list()
         current_price = round(output[0],2)
         #self.priceRef.configure(text=round(output[0],2))
-        self.actprice.set(value=round(output[0],2))
+        self.actprice.set(value=current_price)
+        self.toPay.set(value=round(current_price*self.volumeValue.get(),2))
 
         #date = refresher_data[737+ival:738+ival]['Datetime']
 
@@ -482,6 +500,9 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         #self.dateRef.configure(text=date)
 
         self.after(1000, self.Refresher) # every second...
+
+    def slider_event(self, value):
+        self.volumeValue.set(value=round(value, 2))
 
     def buyClick(self):
         self.sell.configure(fg_color="#39434D")
@@ -616,7 +637,8 @@ class TradeFrame(customtkinter.CTkFrame):
 
         self.charts = {}
 
-        chart = ChartFrame(self)
+        chart = customtkinter.CTkFrame(self, width=800, height=520, fg_color="grey")
+        #chart = ChartFrame(self)
 
         self.charts[ChartFrame] = chart
 
