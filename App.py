@@ -554,7 +554,7 @@ class TradesInfo(customtkinter.CTkFrame):
         self.priceDiffStr = customtkinter.CTkLabel(new, text="Price Diff")
         self.priceDiffStr.grid(row=0, column=5, padx=20, sticky=tk.NW)
 
-        self.container1 = customtkinter.CTkScrollableFrame(self, width=width, fg_color = "red")
+        self.container1 = customtkinter.CTkScrollableFrame(self, width=width, fg_color = BACK_COLOR )
         self.container1.grid(row=1, column=0, columnspan=5, padx=20, sticky=tk.NW)
 
         self.verses = {}
@@ -578,7 +578,7 @@ class TradesInfo(customtkinter.CTkFrame):
         output = output.to_list()
         if self.verses:
             for t in self.verses:
-                diff = round(output[0] - (self.tradePrice/self.volumeVal),2)
+                diff = round((output[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
                 color = "white"
                 if diff > 0:
                     color = MAIN_COLOR
