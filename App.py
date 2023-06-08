@@ -527,14 +527,38 @@ class TradesInfo(customtkinter.CTkFrame):
         super().__init__(master, width, height, **kwargs)
         
         self.tradePrice = 0
-        self.volume = 0
+        self.volumeVal = 1
         self.width = width
 
+
         # add widgets onto the frame, for example:
-        self.container = customtkinter.CTkScrollableFrame(self, width=width, height=height, fg_color = BACK_COLOR)
-        self.container.place(relx=0, rely=0, anchor=tk.NW)
+        self.container = customtkinter.CTkFrame(self, width=width, height=height, fg_color = "green")
+        self.container.grid(row=0, column=0, padx=0, sticky=tk.NW)
+        
+        
+        new = customtkinter.CTkFrame(self.container, width=self.width, fg_color = "#39434D")
+        new.grid(row=0, column=0, padx=0, sticky=tk.NW)
+        
+        self.dateStr = customtkinter.CTkLabel(new, text="Datetime", width=200)
+        self.dateStr.grid(row=0, column=0, padx=0, sticky=tk.NW)
+
+        self.cur_priceStr = customtkinter.CTkLabel(new, text="Current Price")
+        self.cur_priceStr.grid(row=0, column=2, padx=20, sticky=tk.NW)
+
+        self.priceStr = customtkinter.CTkLabel(new, text="Buy Price")
+        self.priceStr.grid(row=0, column=3, padx=20, sticky=tk.NW)
+
+        self.volumeStr = customtkinter.CTkLabel(new, text="Volume")
+        self.volumeStr.grid(row=0, column=4, padx=20, sticky=tk.NW)
+
+        self.priceDiffStr = customtkinter.CTkLabel(new, text="Price Diff")
+        self.priceDiffStr.grid(row=0, column=5, padx=20, sticky=tk.NW)
+
+        self.container1 = customtkinter.CTkScrollableFrame(self, width=width, fg_color = "red")
+        self.container1.grid(row=1, column=0, columnspan=5, padx=20, sticky=tk.NW)
 
         self.verses = {}
+
         #verse = customtkinter.CTkFrame(self.container, width=1280, fg_color = BACK_COLOR)
         #self.verses[customtkinter.CTkFrame] = verse
         #verse.grid(row=0, column=0, sticky=tk.NW)
@@ -554,39 +578,41 @@ class TradesInfo(customtkinter.CTkFrame):
         output = output.to_list()
         if self.verses:
             for t in self.verses:
-                diff = round(output[0]*self.volume - self.tradePrice*self.volume,2)
+                diff = round(output[0] - (self.tradePrice/self.volumeVal),2)
                 color = "white"
                 if diff > 0:
                     color = MAIN_COLOR
                 else:
                     color= SECOND_COLOR
-                t.priceDiff.configure(text=diff, text_color=color)
-                t.cur_price.configure(text=round(output[0],2))
+                self.priceDiff.configure(text=diff, text_color=color)
 
         self.after(1000, self.Refresher) # every second...
 
 
-    def add_transaction(self, price, volume):
+    def add_transaction(self,  price, volume):
 
         global current_price
 
         self.tradePrice = price
-        self.volume = volume
+        self.volumeVal = volume
 
-        new = customtkinter.CTkFrame(self.container, width=self.width, fg_color = "#39434D")
+        new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
         self.verses[customtkinter.CTkFrame] = new
         new.pack(side = tk.TOP, pady = 5, padx = 10, anchor= tk.W)
         self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
         self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
 
+        self.cur_price = customtkinter.CTkLabel(new, text=current_price)
+        self.cur_price.grid(row=0, column=2, padx=20, sticky=tk.NW)
+
         self.price = customtkinter.CTkLabel(new, text=price)
-        self.price.grid(row=0, column=1, padx=20, sticky=tk.NW)
+        self.price.grid(row=0, column=3, padx=20, sticky=tk.NW)
 
         self.volume = customtkinter.CTkLabel(new, text=volume)
-        self.volume.grid(row=0, column=2, padx=20, sticky=tk.NW)
+        self.volume.grid(row=0, column=4, padx=20, sticky=tk.NW)
 
         self.priceDiff = customtkinter.CTkLabel(new, text="0.00")
-        self.priceDiff.grid(row=0, column=3, padx=20, sticky=tk.NW)
+        self.priceDiff.grid(row=0, column=5, padx=20, sticky=tk.NW)
 
 
     def update(self):
@@ -705,7 +731,7 @@ class TradeFrame(customtkinter.CTkFrame):
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("1280x720")
+        self.geometry("1280x780")
         self.title("Trading App")
         
         self.container = customtkinter.CTkFrame(self, fg_color = BACK_COLOR)

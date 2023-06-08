@@ -1,6 +1,6 @@
 class Wallet:
     def __init__(self):
-        self.USD = 1000
+        self.USD = 100000
         self.fiat = []
         self.stocks = []
         self.crypto = []
