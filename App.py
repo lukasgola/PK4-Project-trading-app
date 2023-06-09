@@ -529,11 +529,8 @@ class TradesInfo(customtkinter.CTkFrame):
         self.width = width
 
         self.usd = user.wallet.getUSD()
-        cryptoList = user.wallet.getCryptos()
-        for t in cryptoList:
-            print(type(t))
 
-        
+        #user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 0.0123 )
 
 
         # add widgets onto the frame, for example:
@@ -577,26 +574,15 @@ class TradesInfo(customtkinter.CTkFrame):
         self.usd = customtkinter.CTkLabel(self.right, text="USD", font=("Roboto", 16, "bold"), width=180)
         self.usd.grid(row=2, column=0,padx=10,pady=5)
 
-        self.fiat = customtkinter.CTkLabel(self.right, text="Fiat", font=("Roboto", 16, "bold"), width=180)
-        self.fiat.grid(row=3, column=0,padx=10,pady=5)
-
-        self.crypto = customtkinter.CTkLabel(self.right, text="Stocks", font=("Roboto", 16, "bold"), width=180)
-        self.crypto.grid(row=4, column=0,padx=10,pady=5)
-
-        self.stocks = customtkinter.CTkLabel(self.right, text="Crypto", font=("Roboto", 16, "bold"), width=180)
-        self.stocks.grid(row=5, column=0,padx=10,pady=5)
+        self.crypto = customtkinter.CTkLabel(self.right, text=exchange, font=("Roboto", 16, "bold"), width=180)
+        self.crypto.grid(row=3, column=0,padx=10,pady=5)
 
         self.usdValue = customtkinter.CTkLabel(self.right, text=user.wallet.getUSD(), font=("Roboto", 16, "bold"), width=260)
         self.usdValue.grid(row=2, column=1,padx=10,pady=5)
 
-        self.fiatValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
-        self.fiatValue.grid(row=3, column=1,padx=10,pady=5)
-
         self.cryptoValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
-        self.cryptoValue.grid(row=4, column=1,padx=10,pady=5)
+        self.cryptoValue.grid(row=3, column=1,padx=10,pady=5)
 
-        self.stocksValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
-        self.stocksValue.grid(row=5, column=1,padx=10,pady=5)
         
         self.verses = {}
 
@@ -609,9 +595,21 @@ class TradesInfo(customtkinter.CTkFrame):
         global refresher_data
         global interval_ms
         global current_price
+        global exchange
 
         output = refresher_data[738+ival:739+ival]['Open']
         output = output.to_list()
+
+        cryptoList = user.wallet.getCryptos()
+        crypto = 0
+        for t in cryptoList:
+            if t.getType() == exchange:
+                crypto += t.getVolume()
+        crypto = round(crypto*output[0],2)
+
+        self.crypto.configure(text=exchange)
+
+
         if self.verses:
             if self.volumeVal != 0:
                 for t in self.verses:
@@ -621,6 +619,8 @@ class TradesInfo(customtkinter.CTkFrame):
                         color = MAIN_COLOR
                     else:
                         color= SECOND_COLOR
+                    
+                    self.cryptoValue.configure(text=crypto)
                     self.priceDiff.configure(text=diff, text_color=color)
 
         self.after(1000, self.Refresher) # every second...
@@ -629,6 +629,7 @@ class TradesInfo(customtkinter.CTkFrame):
     def add_transaction(self,  price, volume):
 
         global current_price
+        global exchange
 
         if volume != 0:
             self.tradePrice = price
