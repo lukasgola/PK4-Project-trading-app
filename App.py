@@ -585,6 +585,7 @@ class TradesInfo(customtkinter.CTkFrame):
 
         
         self.verses = {}
+        self.differs = []
 
         self.Refresher()
 
@@ -609,14 +610,16 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.crypto.configure(text=exchange)
 
+        counter = 0
 
-        if self.verses:
+        if self.differs:
             if self.volumeVal != 0:
-                for t in self.verses:
-                    data = yf.download(tickers=exchange, period=period, interval='1m')
+                for t in cryptoList:
+                    data = yf.download(tickers=t.getType(), period=period, interval='1m')
                     output1 = data[738+ival:739+ival]['Open']
-                    output1 = output.to_list()
-                    diff = round((output1[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
+                    output1 = output1.to_list()
+                    #diff = round((output1[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
+                    diff = round((output1[0] - (t.getBuyPrice()/t.getVolume()))*t.getVolume(),2)
                     color = "white"
                     if diff > 0:
                         color = MAIN_COLOR
@@ -624,7 +627,9 @@ class TradesInfo(customtkinter.CTkFrame):
                         color= SECOND_COLOR
                     
                     self.cryptoValue.configure(text=crypto)
-                    self.priceDiff.configure(text=diff, text_color=color)
+                    #self.priceDiff.configure(text=diff, text_color=color)
+                    self.differs[counter].configure(text=diff, text_color=color)
+                    counter += 1
 
         self.after(1000, self.Refresher) # every second...
 
@@ -654,6 +659,7 @@ class TradesInfo(customtkinter.CTkFrame):
             self.volume.grid(row=0, column=4, padx=0)
 
             self.priceDiff = customtkinter.CTkLabel(new, text="0.00", width=150)
+            self.differs.append(self.priceDiff)
             self.priceDiff.grid(row=0, column=5, padx=0)
 
             self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
