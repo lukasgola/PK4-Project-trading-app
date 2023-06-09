@@ -613,7 +613,10 @@ class TradesInfo(customtkinter.CTkFrame):
         if self.verses:
             if self.volumeVal != 0:
                 for t in self.verses:
-                    diff = round((output[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
+                    data = yf.download(tickers=exchange, period=period, interval='1m')
+                    output1 = data[738+ival:739+ival]['Open']
+                    output1 = output.to_list()
+                    diff = round((output1[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
                     color = "white"
                     if diff > 0:
                         color = MAIN_COLOR
