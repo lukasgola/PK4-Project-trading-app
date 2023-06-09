@@ -143,10 +143,12 @@ def changeExchange(ex):
     global exchange
     global DatCounter
     global data
+    global refresher_data
 
     exchange = ex
     DatCounter = 9000
     data = yf.download(tickers=exchange, period=period, interval=interval)
+    refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
 
 def changePeriod(pe):
     global period
@@ -468,7 +470,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.stocks = customtkinter.CTkLabel(self, textvariable=self.volumeValue, font=("Roboto", 12, "bold"))
         self.stocks.grid(row=10, column=1,padx=20,pady=5, columnspan=2)
         
-        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command= lambda: self.trade.add_transaction(self.toPay.get(),self.volumeValue.get()))
+        self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.confirm)
         self.confirm.grid(row=11, column=1, columnspan=2, padx=10,pady=10)
 
         self.Refresher()
@@ -485,27 +487,23 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         output = refresher_data[737+ival:738+ival]['Open']
         output = output.to_list()
         current_price = round(output[0],2)
-        #self.priceRef.configure(text=round(output[0],2))
+
         self.actprice.set(value=current_price)
-
         ratio = round(user.wallet.getUSD()*(self.ratioValue.get()/100),5)
-
-
         self.volumeValue.set(value=round(ratio/current_price,5))
-
         self.toPay.set(value=ratio)
-
-        #date = refresher_data[737+ival:738+ival]['Datetime']
-
-        #date = date.to_list()
-        #self.dateRef.configure(text=date)
 
         self.after(1000, self.Refresher) # every second...
 
     def slider_event(self, value):
         self.ratioValue.set(value=round(value, 2))
 
+    def confirm(self):
+        self.trade.add_transaction(self.toPay.get(),self.volumeValue.get())
+        self.ratioValue.set(value=0)
+
     def buyClick(self):
+        user.wallet.getCryptos()
         self.sell.configure(fg_color="#39434D")
         self.buy.configure(fg_color=MAIN_COLOR)
         self.confirm.configure(text="SELL", fg_color=MAIN_COLOR)
@@ -527,42 +525,80 @@ class TradesInfo(customtkinter.CTkFrame):
         super().__init__(master, width, height, **kwargs)
         
         self.tradePrice = 0
-        self.volumeVal = 1
+        self.volumeVal = 0
         self.width = width
+
+        self.usd = user.wallet.getUSD()
+        cryptoList = user.wallet.getCryptos()
+        for t in cryptoList:
+            print(type(t))
+
+        
 
 
         # add widgets onto the frame, for example:
-        self.container = customtkinter.CTkFrame(self, width=width, height=height, fg_color = "green")
+        self.container = customtkinter.CTkFrame(self, width=800, height=height, fg_color = BACK_COLOR)
         self.container.grid(row=0, column=0, padx=0, sticky=tk.NW)
+
+        self.right = customtkinter.CTkFrame(self, width=480, height=height+40, fg_color = BACK_COLOR)
+        self.right.grid(row=0, column=1, rowspan=2, padx=0, sticky=tk.NE)
         
         
-        new = customtkinter.CTkFrame(self.container, width=self.width, fg_color = "#39434D")
-        new.grid(row=0, column=0, padx=0, sticky=tk.NW)
+        self.new = customtkinter.CTkFrame(self.container, width=800, height=100, fg_color = "#39434D")
+        self.new.grid(row=0, column=0, padx=0)
         
-        self.dateStr = customtkinter.CTkLabel(new, text="Datetime", width=200)
-        self.dateStr.grid(row=0, column=0, padx=0, sticky=tk.NW)
+        self.dateStr = customtkinter.CTkLabel(self.new, text="Datetime", width=200)
+        self.dateStr.grid(row=0, column=0, padx=0)
+        
+        self.cur_priceStr = customtkinter.CTkLabel(self.new, text="Current Price", width=150)
+        self.cur_priceStr.grid(row=0, column=2, padx=0)
 
-        self.cur_priceStr = customtkinter.CTkLabel(new, text="Current Price")
-        self.cur_priceStr.grid(row=0, column=2, padx=20, sticky=tk.NW)
+        self.priceStr = customtkinter.CTkLabel(self.new, text="Buy Price", width=150)
+        self.priceStr.grid(row=0, column=3, padx=0)
 
-        self.priceStr = customtkinter.CTkLabel(new, text="Buy Price")
-        self.priceStr.grid(row=0, column=3, padx=20, sticky=tk.NW)
+        self.volumeStr = customtkinter.CTkLabel(self.new, text="Volume", width=150)
+        self.volumeStr.grid(row=0, column=4, padx=0)
 
-        self.volumeStr = customtkinter.CTkLabel(new, text="Volume")
-        self.volumeStr.grid(row=0, column=4, padx=20, sticky=tk.NW)
+        self.priceDiffStr = customtkinter.CTkLabel(self.new, text="Price Diff", width=150)
+        self.priceDiffStr.grid(row=0, column=5, padx=0)
 
-        self.priceDiffStr = customtkinter.CTkLabel(new, text="Price Diff")
-        self.priceDiffStr.grid(row=0, column=5, padx=20, sticky=tk.NW)
+        self.container1 = customtkinter.CTkScrollableFrame(self.container, width=800, height=200, fg_color = BACK_COLOR )
+        self.container1.grid(row=1, column=0, sticky=tk.SW)
 
-        self.container1 = customtkinter.CTkScrollableFrame(self, width=width, fg_color = BACK_COLOR )
-        self.container1.grid(row=1, column=0, columnspan=5, padx=20, sticky=tk.NW)
 
+
+
+        self.username = customtkinter.CTkLabel(self.right, text=user.getUsername(), font=("Roboto", 16, "bold"), width=480)
+        self.username.grid(row=0, column=0, columnspan=2, padx=0,pady=5)
+
+        self.email = customtkinter.CTkLabel(self.right, text=user.getEmail(), font=("Roboto", 16, "bold"), width=480)
+        self.email.grid(row=1, column=0, columnspan=2, padx=0,pady=5)
+
+        self.usd = customtkinter.CTkLabel(self.right, text="USD", font=("Roboto", 16, "bold"), width=180)
+        self.usd.grid(row=2, column=0,padx=10,pady=5)
+
+        self.fiat = customtkinter.CTkLabel(self.right, text="Fiat", font=("Roboto", 16, "bold"), width=180)
+        self.fiat.grid(row=3, column=0,padx=10,pady=5)
+
+        self.crypto = customtkinter.CTkLabel(self.right, text="Stocks", font=("Roboto", 16, "bold"), width=180)
+        self.crypto.grid(row=4, column=0,padx=10,pady=5)
+
+        self.stocks = customtkinter.CTkLabel(self.right, text="Crypto", font=("Roboto", 16, "bold"), width=180)
+        self.stocks.grid(row=5, column=0,padx=10,pady=5)
+
+        self.usdValue = customtkinter.CTkLabel(self.right, text=user.wallet.getUSD(), font=("Roboto", 16, "bold"), width=260)
+        self.usdValue.grid(row=2, column=1,padx=10,pady=5)
+
+        self.fiatValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
+        self.fiatValue.grid(row=3, column=1,padx=10,pady=5)
+
+        self.cryptoValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
+        self.cryptoValue.grid(row=4, column=1,padx=10,pady=5)
+
+        self.stocksValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
+        self.stocksValue.grid(row=5, column=1,padx=10,pady=5)
+        
         self.verses = {}
-
-        #verse = customtkinter.CTkFrame(self.container, width=1280, fg_color = BACK_COLOR)
-        #self.verses[customtkinter.CTkFrame] = verse
-        #verse.grid(row=0, column=0, sticky=tk.NW)
-        #verse.place(relx=0, rely=0, anchor=tk.NW)
 
         self.Refresher()
 
@@ -577,14 +613,15 @@ class TradesInfo(customtkinter.CTkFrame):
         output = refresher_data[738+ival:739+ival]['Open']
         output = output.to_list()
         if self.verses:
-            for t in self.verses:
-                diff = round((output[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
-                color = "white"
-                if diff > 0:
-                    color = MAIN_COLOR
-                else:
-                    color= SECOND_COLOR
-                self.priceDiff.configure(text=diff, text_color=color)
+            if self.volumeVal != 0:
+                for t in self.verses:
+                    diff = round((output[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
+                    color = "white"
+                    if diff > 0:
+                        color = MAIN_COLOR
+                    else:
+                        color= SECOND_COLOR
+                    self.priceDiff.configure(text=diff, text_color=color)
 
         self.after(1000, self.Refresher) # every second...
 
@@ -593,26 +630,32 @@ class TradesInfo(customtkinter.CTkFrame):
 
         global current_price
 
-        self.tradePrice = price
-        self.volumeVal = volume
+        if volume != 0:
+            self.tradePrice = price
+            self.volumeVal = volume
 
-        new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
-        self.verses[customtkinter.CTkFrame] = new
-        new.pack(side = tk.TOP, pady = 5, padx = 10, anchor= tk.W)
-        self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
-        self.date.grid(row=0, column=0, padx=20, sticky=tk.NW)
+            new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
+            self.verses[customtkinter.CTkFrame] = new
+            new.pack(side = tk.TOP, pady = 5, padx = 0)
+            self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"), width=200)
+            self.date.grid(row=0, column=0, padx=0)
 
-        self.cur_price = customtkinter.CTkLabel(new, text=current_price)
-        self.cur_price.grid(row=0, column=2, padx=20, sticky=tk.NW)
+            self.cur_price = customtkinter.CTkLabel(new, text=current_price, width=150)
+            self.cur_price.grid(row=0, column=2, padx=0)
 
-        self.price = customtkinter.CTkLabel(new, text=price)
-        self.price.grid(row=0, column=3, padx=20, sticky=tk.NW)
+            self.price = customtkinter.CTkLabel(new, text=price, width=150)
+            self.price.grid(row=0, column=3, padx=0)
 
-        self.volume = customtkinter.CTkLabel(new, text=volume)
-        self.volume.grid(row=0, column=4, padx=20, sticky=tk.NW)
+            self.volume = customtkinter.CTkLabel(new, text=volume, width=150)
+            self.volume.grid(row=0, column=4, padx=0)
 
-        self.priceDiff = customtkinter.CTkLabel(new, text="0.00")
-        self.priceDiff.grid(row=0, column=5, padx=20, sticky=tk.NW)
+            self.priceDiff = customtkinter.CTkLabel(new, text="0.00", width=150)
+            self.priceDiff.grid(row=0, column=5, padx=0)
+
+            self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
+
+            user.wallet.setUSD(user.wallet.getUSD()-price)
+            user.wallet.addProduct(exchange, price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume)
 
 
     def update(self):
@@ -623,90 +666,29 @@ class TradesInfo(customtkinter.CTkFrame):
         atributte.configure(text_color="red")
 
 
-class UserInfo(customtkinter.CTkFrame):
-    def __init__(self, master, width, height, **kwargs):
-        super().__init__(master, width, height, **kwargs)
-    
-
-        # add widgets onto the frame, for example:
-        self.container = customtkinter.CTkFrame(self, width=width, height=height, fg_color = BACK_COLOR)
-        self.container.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
-
-
-        self.username = customtkinter.CTkLabel(self.container, text=user.getUsername(), font=("Roboto", 16, "bold"))
-        self.username.grid(row=0, column=0,padx=10,pady=5)
-
-        self.email = customtkinter.CTkLabel(self.container, text=user.getEmail(), font=("Roboto", 16, "bold"))
-        self.email.grid(row=1, column=0,padx=10,pady=5)
-
-        self.fiat = customtkinter.CTkLabel(self.container, text="Fiat", font=("Roboto", 16, "bold"))
-        self.fiat.grid(row=2, column=0,padx=10,pady=5)
-
-        self.crypto = customtkinter.CTkLabel(self.container, text="Stocks", font=("Roboto", 16, "bold"))
-        self.crypto.grid(row=3, column=0,padx=10,pady=5)
-
-        self.stocks = customtkinter.CTkLabel(self.container, text="Crypto", font=("Roboto", 16, "bold"))
-        self.stocks.grid(row=4, column=0,padx=10,pady=5)
-
-        self.fiatValue = customtkinter.CTkLabel(self.container, text="0.00", font=("Roboto", 16, "bold"))
-        self.fiatValue.grid(row=2, column=1,padx=10,pady=5)
-
-        self.cryptoValue = customtkinter.CTkLabel(self.container, text="0.00", font=("Roboto", 16, "bold"))
-        self.cryptoValue.grid(row=3, column=1,padx=10,pady=5)
-
-        self.stocksValue = customtkinter.CTkLabel(self.container, text="0.00", font=("Roboto", 16, "bold"))
-        self.stocksValue.grid(row=4, column=1,padx=10,pady=5)
-
-
-
 class TradeFrame(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
 
         self.charts = {}
-
         chart = customtkinter.CTkFrame(self, width=800, height=520, fg_color="grey")
         #chart = ChartFrame(self)
-
         self.charts[ChartFrame] = chart
-
         chart.grid(row=0, column=0, sticky=tk.W)
 
         
         
         self.trades = {}
-
-        trade = TradesInfo(self, width=800, height=200, fg_color=BACK_COLOR)
-
+        trade = TradesInfo(self, width=1280, height=200, fg_color=BACK_COLOR)
         self.trades[TradesInfo] = trade
+        trade.grid(row=1, column=0, columnspan=2)
 
-        trade.grid(row=1, column=0)
-
-
-
-        self.users = {}
-
-        user = UserInfo(self, width=480, height=200, fg_color=BACK_COLOR)
-
-        self.users[UserInfo] = user
-        
-        user.grid(row=1, column=1)
-
-
-    
 
         self.frames = {}
-        
         buy = BuyLimitFrame(self, trade, width=480, height=520, fg_color=BACK_COLOR)
-
         self.frames[BuyLimitFrame] = buy
-
         buy.grid(row=0, column=1)
-
-        #self.show_frame(BuyLimitFrame, BuyLimitFrame)
-
-        #self.show_chart(ChartFrame, ChartFrame);
 
 
     def show_chart(self, cont, old): 
@@ -767,11 +749,8 @@ class App(customtkinter.CTk):
         tk.Tk.config(self, menu=menubar)
 
         self.frames = {}
-        
         trade = TradeFrame(self.container, fg_color=BACK_COLOR)
-
         self.frames[TradeFrame] = trade
-
         trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
