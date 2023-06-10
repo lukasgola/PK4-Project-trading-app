@@ -603,33 +603,28 @@ class TradesInfo(customtkinter.CTkFrame):
 
         cryptoList = user.wallet.getCryptos()
         crypto = 0
-        for t in cryptoList:
-            if t.getType() == exchange:
-                crypto += t.getVolume()
-        crypto = round(crypto*output[0],2)
 
         self.crypto.configure(text=exchange)
 
         counter = 0
 
         if self.differs:
-            if self.volumeVal != 0:
-                for t in cryptoList:
-                    data = yf.download(tickers=t.getType(), period=period, interval='1m')
-                    output1 = data[738+ival:739+ival]['Open']
-                    output1 = output1.to_list()
-                    #diff = round((output1[0] - (self.tradePrice/self.volumeVal))*self.volumeVal,2)
-                    diff = round((output1[0] - (t.getBuyPrice()/t.getVolume()))*t.getVolume(),2)
-                    color = "white"
-                    if diff > 0:
-                        color = MAIN_COLOR
-                    else:
-                        color= SECOND_COLOR
-                    
-                    self.cryptoValue.configure(text=crypto)
-                    #self.priceDiff.configure(text=diff, text_color=color)
-                    self.differs[counter].configure(text=diff, text_color=color)
-                    counter += 1
+            for t in cryptoList:
+                data = yf.download(tickers=t.getType(), period=period, interval='1m')
+                output1 = data[738+ival:739+ival]['Open']
+                output1 = output1.to_list()
+                diff = round((output1[0] - (t.getBuyPrice()/t.getVolume()))*t.getVolume(),2)
+                color = "white"
+                if diff > 0:
+                    color = MAIN_COLOR
+                else:
+                    color= SECOND_COLOR
+                self.differs[counter].configure(text=diff, text_color=color)
+                counter += 1
+                if t.getType() == exchange:
+                    crypto += t.getVolume()
+        crypto = round(crypto*output[0],2)
+        self.cryptoValue.configure(text=crypto)
 
         self.after(1000, self.Refresher) # every second...
 
