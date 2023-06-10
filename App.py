@@ -150,12 +150,17 @@ def changeExchange(ex):
     global data
     global refresher_data
     global tickers
-    global lines
 
     exchange = ex
     DatCounter = 9000
     data = yf.download(tickers=exchange, period=period, interval=interval)
     refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
+
+    cryptoList = user.wallet.getCryptos()
+
+    #for t in cryptoList:
+     #       if t.getType() == exchange:
+      #          tickers.append(t)
         
 
 
@@ -510,7 +515,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         
 
     def confirm(self):
-        self.trade.add_differ(self.toPay.get(),self.volumeValue.get())
+        self.trade.add_differ(current_price,self.volumeValue.get())
         self.trade.add_transaction(self.toPay.get(),self.volumeValue.get())
         
         self.ratioValue.set(value=0)
@@ -560,8 +565,8 @@ class TradesInfo(customtkinter.CTkFrame):
         self.dateStr = customtkinter.CTkLabel(self.new, text="Datetime", width=200)
         self.dateStr.grid(row=0, column=0, padx=0)
         
-        self.cur_priceStr = customtkinter.CTkLabel(self.new, text="Current Price", width=150)
-        self.cur_priceStr.grid(row=0, column=2, padx=0)
+        self.tickerStr = customtkinter.CTkLabel(self.new, text="Product", width=150)
+        self.tickerStr.grid(row=0, column=2, padx=0)
 
         self.priceStr = customtkinter.CTkLabel(self.new, text="Buy Price", width=150)
         self.priceStr.grid(row=0, column=3, padx=0)
@@ -569,7 +574,7 @@ class TradesInfo(customtkinter.CTkFrame):
         self.volumeStr = customtkinter.CTkLabel(self.new, text="Volume", width=150)
         self.volumeStr.grid(row=0, column=4, padx=0)
 
-        self.priceDiffStr = customtkinter.CTkLabel(self.new, text="Price Diff", width=150)
+        self.priceDiffStr = customtkinter.CTkLabel(self.new, text="Buy/Sell", width=150)
         self.priceDiffStr.grid(row=0, column=5, padx=0)
 
         self.container1 = customtkinter.CTkScrollableFrame(self.container, width=800, height=200, fg_color = BACK_COLOR )
@@ -590,17 +595,27 @@ class TradesInfo(customtkinter.CTkFrame):
         self.crypto = customtkinter.CTkLabel(self.right, text=exchange, font=("Roboto", 16, "bold"), width=180)
         self.crypto.grid(row=3, column=0,padx=10,pady=5)
 
-        self.usdValue = customtkinter.CTkLabel(self.right, text=user.wallet.getUSD(), font=("Roboto", 16, "bold"), width=260)
+        self.usd = customtkinter.CTkLabel(self.right, text="Volume", font=("Roboto", 16, "bold"), width=180)
+        self.usd.grid(row=4, column=0,padx=10,pady=5)
+
+        self.diff = customtkinter.CTkLabel(self.right, text="Diff", font=("Roboto", 16, "bold"), width=180)
+        self.diff.grid(row=5, column=0,padx=10,pady=5)
+
+        self.usdValue = customtkinter.CTkLabel(self.right, text=user.wallet.getUSD(), font=("Roboto", 16), width=260)
         self.usdValue.grid(row=2, column=1,padx=10,pady=5)
 
-        self.cryptoValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16, "bold"), width=260)
+        self.cryptoValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16), width=260)
         self.cryptoValue.grid(row=3, column=1,padx=10,pady=5)
 
+        self.volumeValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16), width=260)
+        self.volumeValue.grid(row=4, column=1,padx=10,pady=5)
+
+        self.diffValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16), width=260)
+        self.diffValue.grid(row=5, column=1,padx=10,pady=5)
+
         
-    
-        self.differs = []
-        self.show_transactions()
         self.Refresher()
+        self.show_transactions()
         
 
 
@@ -618,25 +633,32 @@ class TradesInfo(customtkinter.CTkFrame):
         output = output.to_list()
 
         crypto = 0
+        volume = 0
+        diff = 0
+
+        color = "white"
 
         self.crypto.configure(text=exchange)
 
-        counter = 0
 
         if lines:
             for t in tickers:
-                diff = round((output[0] - (t.getBuyPrice()/t.getVolume()))*t.getVolume(),2)
-                color = "white"
-                if diff > 0:
-                    color = MAIN_COLOR
-                else:
-                    color= SECOND_COLOR
-                #lines[counter].configure(text=diff, text_color=color)
-                counter += 1
                 if t.getType() == exchange:
                     crypto += t.getVolume()
+                    diff += t.getVolume()*t.getBuyPrice()
+        volume = crypto
         crypto = round(crypto*output[0],2)
+
+        diff = round((current_price*volume)- diff,2)
+
+        if diff > 0:
+            color = MAIN_COLOR
+        elif diff < 0:
+            color= SECOND_COLOR
+        
         self.cryptoValue.configure(text=crypto)
+        self.volumeValue.configure(text=volume)
+        self.diffValue.configure(text=diff, text_color=color)
 
         self.after(1000, self.Refresher) # every second...
 
@@ -644,42 +666,44 @@ class TradesInfo(customtkinter.CTkFrame):
         
         global lines
 
-        if volume != 0:    
+        #if volume != 0:    
 
-            self.tradePrice = price
-            self.volumeVal = volume
+        self.tradePrice = price
+        self.volumeVal = volume
 
-            new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
-            lines.append(new)
-            new.pack(side = tk.TOP, pady = 5, padx = 0)
-            self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"), width=200)
-            self.date.grid(row=0, column=0, padx=0)
+        new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
+        lines.append(new)
+        new.pack(side = tk.TOP, pady = 5, padx = 0)
+        self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"), width=200)
+        self.date.grid(row=0, column=0, padx=0)
 
-            self.cur_price = customtkinter.CTkLabel(new, text=current_price, width=150)
-            self.cur_price.grid(row=0, column=2, padx=0)
+        self.ticker = customtkinter.CTkLabel(new, text=exchange, width=150)
+        self.ticker.grid(row=0, column=2, padx=0)
 
-            self.price = customtkinter.CTkLabel(new, text=price, width=150)
-            self.price.grid(row=0, column=3, padx=0)
+        self.price = customtkinter.CTkLabel(new, text=price, width=150)
+        self.price.grid(row=0, column=3, padx=0)
 
-            self.volume = customtkinter.CTkLabel(new, text=volume, width=150)
-            self.volume.grid(row=0, column=4, padx=0)
+        self.volume = customtkinter.CTkLabel(new, text=volume, width=150)
+        self.volume.grid(row=0, column=4, padx=0)
 
-            self.priceDiff = customtkinter.CTkLabel(new, text="0.00", width=150)
-            self.differs.append(self.priceDiff)
-            self.priceDiff.grid(row=0, column=5, padx=0)
+        self.priceDiff = customtkinter.CTkLabel(new, text="Buy", text_color=MAIN_COLOR, width=150)
+        self.priceDiff.grid(row=0, column=5, padx=0)
 
 
     def add_transaction(self,  price, volume):
 
         global current_price
         global exchange
+        global tickers
 
         if volume != 0:
 
             self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
 
+
             user.wallet.setUSD(user.wallet.getUSD()-price)
-            user.wallet.addProduct(exchange, price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume)
+            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume)
+            tickers = user.wallet.getCryptos()
 
 
     def update(self):
@@ -687,7 +711,6 @@ class TradesInfo(customtkinter.CTkFrame):
 
     def show_transactions(self):
         global tickers
-        tickers = []
     
         cryptoList = user.wallet.getCryptos()
 
@@ -695,7 +718,6 @@ class TradesInfo(customtkinter.CTkFrame):
 
         for t in cryptoList:
             if t.getType() == exchange:
-                tickers.append(t)
                 self.add_differ(t.getBuyPrice(), t.getVolume())
 
             
