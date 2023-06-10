@@ -144,6 +144,8 @@ lines = []
 tradePrice = 0
 volume = 0
 
+mode = "Buy"
+
 def changeExchange(ex):
     global exchange
     global DatCounter
@@ -156,11 +158,6 @@ def changeExchange(ex):
     data = yf.download(tickers=exchange, period=period, interval=interval)
     refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
 
-    cryptoList = user.wallet.getCryptos()
-
-    #for t in cryptoList:
-     #       if t.getType() == exchange:
-      #          tickers.append(t)
         
 
 
@@ -437,7 +434,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
 
         self.actprice  = tk.DoubleVar(master=self, value=0)
         self.toPay  = tk.DoubleVar(master=self, value=0)
-        self.ratioValue = tk.DoubleVar(master=self, value=0)
+        self.sliderValue = tk.DoubleVar(master=self, value=0)
         self.volumeValue = tk.DoubleVar(master=self, value=0)
 
         self.trade = trade
@@ -457,10 +454,10 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.price = customtkinter.CTkEntry(self, textvariable=self.actprice, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.price.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
 
-        self.volume = customtkinter.CTkSlider(self, from_=0, to=100, variable=self.ratioValue, command=self.slider_event)
+        self.volume = customtkinter.CTkSlider(self, from_=0, to=100, variable=self.sliderValue, command=self.slider_event)
         self.volume.grid(row=3,column=1, padx=20,pady=5, columnspan=2)
 
-        self.volumeShow = customtkinter.CTkLabel(self, textvariable=self.ratioValue, text=user.getEmail(), font=("Roboto", 16, "bold"))
+        self.volumeShow = customtkinter.CTkLabel(self, textvariable=self.sliderValue, text=user.getEmail(), font=("Roboto", 16, "bold"))
         self.volumeShow.grid(row=4, column=1,padx=0, pady=5, sticky=tk.E)
 
         self.volumeShow2 = customtkinter.CTkLabel(self, text="%", font=("Roboto", 16, "bold"))
@@ -496,6 +493,7 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         global refresher_data
         global interval_ms
         global current_price
+        global volume
 
         ival+=1
         output = refresher_data[737+ival:738+ival]['Open']
@@ -503,9 +501,15 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         current_price = round(output[0],2)
 
         self.actprice.set(value=current_price)
-        ratio = round(user.wallet.getUSD()*(self.ratioValue.get()/100),5)
-        self.volumeValue.set(value=round(ratio/current_price,5))
-        self.toPay.set(value=ratio)
+        if mode == "Buy":
+            ratio = round(user.wallet.getUSD()*(self.sliderValue.get()/100),5)
+            self.volumeValue.set(value=round(ratio/current_price,5))
+            self.toPay.set(value=ratio)
+
+        else:
+            ratio = round(volume*(self.sliderValue.get()/100),5)
+            self.volumeValue.set(value=round(ratio*current_price,5))
+            self.toPay.set(value=ratio)
 
         self.after(1000, self.Refresher) # every second...
 
@@ -515,18 +519,26 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         
 
     def confirm(self):
-        self.trade.add_differ(current_price,self.volumeValue.get())
-        self.trade.add_transaction(self.toPay.get(),self.volumeValue.get())
+        if mode == "Buy"
+            self.trade.add_differ(current_price,self.volumeValue.get())
+            self.trade.add_transaction(self.toPay.get(),self.volumeValue.get())
+        else:
+            self.trade.add_differ(current_price,self.volumeValue.get())
+            self.trade.add_transaction(self.toPay.get(),self.volumeValue.get())
         
-        self.ratioValue.set(value=0)
+        self.sliderValue.set(value=0)
 
     def buyClick(self):
+        global mode
+        mode = "Buy"
         user.wallet.getCryptos()
         self.sell.configure(fg_color="#39434D")
         self.buy.configure(fg_color=MAIN_COLOR)
         self.confirm.configure(text="SELL", fg_color=MAIN_COLOR)
 
     def sellClick(self):
+        global mode
+        mode = "Sell"
         self.buy.configure(fg_color="#39434D")
         self.sell.configure(fg_color=SECOND_COLOR)
         self.confirm.configure(text="SELL", fg_color=SECOND_COLOR)
@@ -628,12 +640,13 @@ class TradesInfo(customtkinter.CTkFrame):
         global exchange
         global tickers
         global lines
+        global volume
 
         output = refresher_data[738+ival:739+ival]['Open']
         output = output.to_list()
 
         crypto = 0
-        volume = 0
+        local_volume = 0
         diff = 0
 
         color = "white"
@@ -646,10 +659,11 @@ class TradesInfo(customtkinter.CTkFrame):
                 if t.getType() == exchange:
                     crypto += t.getVolume()
                     diff += t.getVolume()*t.getBuyPrice()
+        local_volume = crypto
         volume = crypto
         crypto = round(crypto*output[0],2)
 
-        diff = round((current_price*volume)- diff,2)
+        diff = round((current_price*local_volume)- diff,2)
 
         if diff > 0:
             color = MAIN_COLOR
@@ -657,7 +671,7 @@ class TradesInfo(customtkinter.CTkFrame):
             color= SECOND_COLOR
         
         self.cryptoValue.configure(text=crypto)
-        self.volumeValue.configure(text=volume)
+        self.volumeValue.configure(text=local_volume)
         self.diffValue.configure(text=diff, text_color=color)
 
         self.after(1000, self.Refresher) # every second...
@@ -686,7 +700,7 @@ class TradesInfo(customtkinter.CTkFrame):
         self.volume = customtkinter.CTkLabel(new, text=volume, width=150)
         self.volume.grid(row=0, column=4, padx=0)
 
-        self.priceDiff = customtkinter.CTkLabel(new, text="Buy", text_color=MAIN_COLOR, width=150)
+        self.priceDiff = customtkinter.CTkLabel(new, text=mode, text_color= MAIN_COLOR if mode == "Buy" else SECOND_COLOR, width=150)
         self.priceDiff.grid(row=0, column=5, padx=0)
 
 
@@ -697,13 +711,18 @@ class TradesInfo(customtkinter.CTkFrame):
         global tickers
 
         if volume != 0:
+            if mode == "Buy":
+                self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
+                user.wallet.setUSD(user.wallet.getUSD()-price)
+                user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume)
+                tickers = user.wallet.getCryptos()
+            
+            elif mode == "Sell":
+                self.usdValue.configure(text=round(user.wallet.getUSD()+(volume*current_price),2))
+                user.wallet.setUSD(user.wallet.getUSD()+(volume*current_price),2)
+                user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume)
+                tickers = user.wallet.getCryptos()
 
-            self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
-
-
-            user.wallet.setUSD(user.wallet.getUSD()-price)
-            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume)
-            tickers = user.wallet.getCryptos()
 
 
     def update(self):
