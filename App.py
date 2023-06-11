@@ -673,7 +673,7 @@ class TradesInfo(customtkinter.CTkFrame):
             color= SECOND_COLOR
         
         self.cryptoValue.configure(text=crypto)
-        self.volumeValue.configure(text=local_volume)
+        self.volumeValue.configure(text=round(local_volume,5))
         self.diffValue.configure(text=diff, text_color=color)
 
         self.after(1000, self.Refresher) # every second...
