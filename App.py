@@ -428,6 +428,8 @@ class ChartFrame(customtkinter.CTkFrame):
 class BuyLimitFrame(customtkinter.CTkFrame):
     def __init__(self, master, trade, **kwargs):
         super().__init__(master, **kwargs)
+
+        global mode
         
         # add widgets onto the frame, for example:
 
@@ -435,6 +437,9 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.toPay  = tk.DoubleVar(master=self, value=0)
         self.sliderValue = tk.DoubleVar(master=self, value=0)
         self.volumeValue = tk.DoubleVar(master=self, value=0)
+
+        self.stopLoss = tk.DoubleVar(master=self, value=0)
+        self.takeProfit = tk.DoubleVar(master=self, value=0)
 
         self.trade = trade
 
@@ -462,16 +467,16 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.volumeShow2 = customtkinter.CTkLabel(self, text="%", font=("Roboto", 16, "bold"))
         self.volumeShow2.grid(row=4, column=2,padx=0, pady=5, sticky=tk.W)
 
-        self.stopLoss = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
-        self.stopLoss.grid(row=5, column=1, padx=20, sticky=tk.W)
+        self.stopLossStr = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
+        self.stopLossStr.grid(row=5, column=1, padx=20, sticky=tk.W)
 
-        self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", textvariable=self.stopLoss, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.stopLossValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
 
-        self.takeProfit = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
-        self.takeProfit.grid(row=7, column=1, padx=20, sticky=tk.W)
+        self.takeProfitStr = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
+        self.takeProfitStr.grid(row=7, column=1, padx=20, sticky=tk.W)
 
-        self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", textvariable=self.takeProfit, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.takeProfitValue.grid(row=8,column=1, padx=20,pady=5, columnspan=2)
 
         self.needToPay = customtkinter.CTkEntry(self, textvariable=self.toPay, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
