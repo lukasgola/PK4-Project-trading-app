@@ -29,6 +29,7 @@ customtkinter.set_default_color_theme("green")
 MAIN_COLOR = "#0DCB81"
 SECOND_COLOR = '#F6475D'
 BACK_COLOR = "#161A1E"
+YELLOW_COLOR = "#FCD535"
 
 #Database
 def check_data(email, password):
@@ -140,11 +141,13 @@ refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
 
 tickers = []
 lines = []
+limits = []
 
 tradePrice = 0
 volume = 0
 
 mode = "Buy"
+mode2 = "Market"
 
 def changeExchange(ex):
     global exchange
@@ -441,6 +444,8 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.stopLoss = tk.DoubleVar(master=self, value=0)
         self.takeProfit = tk.DoubleVar(master=self, value=0)
 
+        self.limitValue = tk.DoubleVar(master=self, value=0)
+
         self.trade = trade
 
         self.left = customtkinter.CTkFrame(self, width=70, fg_color=BACK_COLOR)
@@ -454,39 +459,47 @@ class BuyLimitFrame(customtkinter.CTkFrame):
 
         self.sell = customtkinter.CTkButton(self, text="SELL", font=("Roboto", 16, "bold"), fg_color="#39434D", hover=False, width=130, height=30, command=self.sellClick)
         self.sell.grid(row=1, column=2,padx=10,pady=5)
+
+        self.market = customtkinter.CTkButton(self, text="Market", font=("Roboto", 12, "bold"), fg_color=BACK_COLOR, text_color=YELLOW_COLOR, hover=False, height=20, command=self.marketClick)
+        self.market.grid(row=2, column=1,padx=10,pady=5)
+
+        self.limit = customtkinter.CTkButton(self, text="Limit", font=("Roboto", 12, "bold"), fg_color=BACK_COLOR, hover=False, height=20, command=self.limitClick)
+        self.limit.grid(row=2, column=2,padx=10,pady=5)
     
         self.price = customtkinter.CTkEntry(self, textvariable=self.actprice, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.price.grid(row=2,column=1, padx=20,pady=5, columnspan=2)
+        self.price.grid(row=3,column=1, padx=20,pady=5, columnspan=2)
 
         self.volume = customtkinter.CTkSlider(self, from_=0, to=100, variable=self.sliderValue, command=self.slider_event)
-        self.volume.grid(row=3,column=1, padx=20,pady=5, columnspan=2)
+        self.volume.grid(row=4,column=1, padx=20,pady=5, columnspan=2)
 
         self.volumeShow = customtkinter.CTkLabel(self, textvariable=self.sliderValue, text=user.getEmail(), font=("Roboto", 16, "bold"))
-        self.volumeShow.grid(row=4, column=1,padx=0, pady=5, sticky=tk.E)
+        self.volumeShow.grid(row=5, column=1,padx=0, pady=5, sticky=tk.E)
 
         self.volumeShow2 = customtkinter.CTkLabel(self, text="%", font=("Roboto", 16, "bold"))
-        self.volumeShow2.grid(row=4, column=2,padx=0, pady=5, sticky=tk.W)
+        self.volumeShow2.grid(row=5, column=2,padx=0, pady=5, sticky=tk.W)
 
-        self.stopLossStr = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
-        self.stopLossStr.grid(row=5, column=1, padx=20, sticky=tk.W)
+    
 
-        self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", textvariable=self.stopLoss, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.stopLossValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
+        #self.stopLossStr = customtkinter.CTkCheckBox(self, text="Stop Loss", font=("Roboto", 14))
+        #self.stopLossStr.grid(row=5, column=1, padx=20, sticky=tk.W)
 
-        self.takeProfitStr = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
-        self.takeProfitStr.grid(row=7, column=1, padx=20, sticky=tk.W)
+        #self.stopLossValue = customtkinter.CTkEntry(self, placeholder_text="Stop Loss", textvariable=self.stopLoss, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        #self.stopLossValue.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
 
-        self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", textvariable=self.takeProfit, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.takeProfitValue.grid(row=8,column=1, padx=20,pady=5, columnspan=2)
+        #self.takeProfitStr = customtkinter.CTkCheckBox(self, text="Take Profit", font=("Roboto", 14))
+        #self.takeProfitStr.grid(row=7, column=1, padx=20, sticky=tk.W)
+
+        #self.takeProfitValue = customtkinter.CTkEntry(self, placeholder_text="Take Profit", textvariable=self.takeProfit, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        #self.takeProfitValue.grid(row=8,column=1, padx=20,pady=5, columnspan=2)
 
         self.needToPay = customtkinter.CTkEntry(self, textvariable=self.toPay, placeholder_text="Limit", state="disabled", width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
-        self.needToPay.grid(row=9,column=1, padx=20,pady=5, columnspan=2)
+        self.needToPay.grid(row=10,column=1, padx=20,pady=5, columnspan=2)
 
         self.stocks = customtkinter.CTkLabel(self, textvariable=self.volumeValue, font=("Roboto", 12, "bold"))
-        self.stocks.grid(row=10, column=1,padx=20,pady=5, columnspan=2)
+        self.stocks.grid(row=11, column=1,padx=20,pady=5, columnspan=2)
         
         self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.confirm)
-        self.confirm.grid(row=11, column=1, columnspan=2, padx=10,pady=10)
+        self.confirm.grid(row=12, column=1, columnspan=2, padx=10,pady=10)
 
         self.Refresher()
 
@@ -524,13 +537,20 @@ class BuyLimitFrame(customtkinter.CTkFrame):
 
     def confirm(self):
         if self.volumeValue.get() != 0:
-            if mode == "Buy":
-                self.trade.add_differ(current_price,self.volumeValue.get())
-                self.trade.add_Buy(self.toPay.get(),self.volumeValue.get())
-            elif mode == "Sell":
-                self.trade.add_differ(current_price,self.needToPay.get())
-                self.trade.add_Sell(self.volumeValue.get(),self.toPay.get())
-            
+            if mode2 == "Market":
+                if mode == "Buy":
+                    self.trade.add_differ(current_price,self.volumeValue.get())
+                    self.trade.add_Buy(self.toPay.get(),self.volumeValue.get())
+                elif mode == "Sell":
+                    self.trade.add_differ(current_price,self.needToPay.get())
+                    self.trade.add_Sell(self.volumeValue.get(),self.toPay.get())
+            elif mode2 == "Limit":
+                if mode == "Buy":
+                    self.trade.add_differ(current_price,self.volumeValue.get())
+                    self.trade.add_Limit_Buy(self.toPay.get(),self.volumeValue.get())
+                elif mode == "Sell":
+                    self.trade.add_differ(current_price,self.needToPay.get())
+                    self.trade.add_Limit_Sell(self.volumeValue.get(),self.toPay.get())
             self.sliderValue.set(value=0)
 
     def buyClick(self):
@@ -547,6 +567,23 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.buy.configure(fg_color="#39434D")
         self.sell.configure(fg_color=SECOND_COLOR)
         self.confirm.configure(text="SELL", fg_color=SECOND_COLOR)
+
+    def marketClick(self):
+        global mode2
+        mode2 = "Market"
+        self.market.configure(text_color=YELLOW_COLOR)
+        self.limit.configure(text_color="#FFF")
+        self.limitStr.destroy()
+
+    def limitClick(self):
+        global mode2
+        mode2 = "Limit"
+        self.market.configure(text_color="#FFF")
+        self.limit.configure(text_color=YELLOW_COLOR)
+        self.limitStr = customtkinter.CTkEntry(self, placeholder_text="Limit", textvariable=self.limitValue, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
+        self.limitStr.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
+
+
 
     
     
@@ -657,6 +694,22 @@ class TradesInfo(customtkinter.CTkFrame):
         color = "white"
 
         self.crypto.configure(text=exchange)
+        
+
+        for l in limits:
+            dataLimit = yf.download(tickers=l.getType(), period=period, interval='1m')
+
+            outputLimit = dataLimit[738+ival:739+ival]['Open']
+            outputLimit = output.to_list()
+            if mode == "Buy":
+                if l.getBuyPrice() >= outputLimit[0]:
+                    user.wallet.addProduct(l)
+                    tickers = user.wallet.getCryptos()
+            elif mode == "Sell":
+                if l.getBuyPrice() <= outputLimit[0]:
+                    user.wallet.addProduct(l)
+                    tickers = user.wallet.getCryptos()
+
 
         for t in tickers:
             if t.getType() == exchange:
@@ -683,7 +736,7 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.after(1000, self.Refresher) # every second...
 
-    def add_differ(self, price, volume):
+    def add_differ(self, price, volume, stopLoss, takeProfit):
         
         global lines
 
@@ -710,6 +763,27 @@ class TradesInfo(customtkinter.CTkFrame):
         self.priceDiff = customtkinter.CTkLabel(new, text=mode, text_color= MAIN_COLOR if mode == "Buy" else SECOND_COLOR, width=150)
         self.priceDiff.grid(row=0, column=5, padx=0)
 
+    def add_Limit_Buy(self, price, volume):
+        global current_price
+        global exchange
+        global limits
+
+        if volume != 0:
+            self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
+            user.wallet.setUSD(user.wallet.getUSD()-price)
+            user.wallet.addLimit(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume, 0, 0)
+            limits = user.wallet.getLimit()
+
+    def add_Limit_Sell(self, price, volume):
+        global current_price
+        global exchange
+        global limits
+
+        if volume !=0:
+            self.usdValue.configure(text=round(user.wallet.getUSD()+(price),2))
+            user.wallet.setUSD(user.wallet.getUSD()+(price))
+            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume, 0, 0)
+            limits = user.wallet.getLimit() 
 
     def add_Buy(self,  price, volume):
 
@@ -718,10 +792,9 @@ class TradesInfo(customtkinter.CTkFrame):
         global tickers
 
         if volume != 0:
-            print(type(volume))
             self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
             user.wallet.setUSD(user.wallet.getUSD()-price)
-            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume)
+            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume, 0, 0)
             tickers = user.wallet.getCryptos()
 
     def add_Sell(self, price, volume):
@@ -733,7 +806,7 @@ class TradesInfo(customtkinter.CTkFrame):
             print("sell")
             self.usdValue.configure(text=round(user.wallet.getUSD()+(price),2))
             user.wallet.setUSD(user.wallet.getUSD()+(price))
-            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume)
+            user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume, 0, 0)
             tickers = user.wallet.getCryptos()   
 
 

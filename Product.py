@@ -5,6 +5,7 @@ class Product:
         self.buyDate = bD
         self.volume = v
 
+
     def getType(self):
         return self.type
 
