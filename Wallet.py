@@ -20,17 +20,17 @@ class Wallet:
     def setUSD(self, value):
         self.USD = value
     
-    def addProduct(self, type, buyPrice, buyDate, buyVolume, stopLoss, takeProfit):
-        self.crypto.append(Crypto(type, buyPrice, buyDate, buyVolume, stopLoss, takeProfit))
+    def addProduct(self, type, buyPrice, buyDate, buyVolume, limit):
+        self.crypto.append(Crypto(type, buyPrice, buyDate, buyVolume, limit))
 
 
     def getCryptos(self):
         return self.crypto
     
-    def addLimit(self, type, buyPrice, buyDate, buyVolume, stopLoss, takeProfit):
-        self.limit.append(Crypto(type, buyPrice, buyDate, buyVolume, stopLoss, takeProfit))
+    def addLimit(self, type, buyPrice, buyDate, buyVolume, limit):
+        self.limit.append(Crypto(type, buyPrice, buyDate, buyVolume, limit))
     
-    def getLimit(self):
+    def getLimits(self):
         return self.limit
 
     #def getBalance(self):
