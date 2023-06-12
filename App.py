@@ -10,9 +10,9 @@ from datetime import datetime
 #Charts
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import matplotlib.animation as animation
-from matplotlib import pyplot as plt
-import matplotlib.dates as mdates
-import matplotlib.ticker as mticker
+#from matplotlib import pyplot as plt
+#import matplotlib.dates as mdates
+#import matplotlib.ticker as mticker
 
 
 import mplfinance as mpf
@@ -21,6 +21,8 @@ import yfinance as yf
 
 #Classes
 from User import User
+
+import threading
 
 #Settings
 customtkinter.set_appearance_mode("System")
@@ -162,14 +164,6 @@ def changeExchange(ex):
 
         
 
-
-def changePeriod(pe):
-    global period
-    global data
-
-    period = pe
-   
-    data = yf.download(tickers=exchange, period=period, interval=interval)
 
 def changeInterval(int, ms):
     global interval
@@ -366,7 +360,7 @@ class ChartFrame(customtkinter.CTkFrame):
         if interval_ms == 1000:
             fig, axes = mpf.plot(data.iloc[690:740], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
         if interval_ms == 2000:
-            fig, axes = mpf.plot(data.iloc[325:375], figsize=(4,3),panel_ratios=(3,1), returnfig=True,volume=True,**pkwargs)
+            fig, axes = mpf.plot(data.iloc[325:375], figsize=(8,5),panel_ratios=(3,1), returnfig=True,volume=True,**pkwargs)
         if interval_ms == 5000:
             fig, axes = mpf.plot(data.iloc[100:150], figsize=(8,5), returnfig=True,volume=True,**pkwargs)
         if interval_ms == 15000:
@@ -396,16 +390,16 @@ class ChartFrame(customtkinter.CTkFrame):
                         
                         if interval_ms == 1000:
                             idf = data.iloc[690+ival:740+ival]
-                            print(data.iloc[739+ival:740+ival])
+                            #print(data.iloc[739+ival:740+ival])
                         if interval_ms == 2000:
                             idf = data.iloc[327+ival:377+ival]
-                            print(data.iloc[376+ival:377+ival])
+                            #print(data.iloc[376+ival:377+ival])
                         if interval_ms == 5000:
                             idf = data.iloc[102+ival:152+ival]
-                            print(data.iloc[151+ival:152+ival])
+                            #print(data.iloc[151+ival:152+ival])
                         if interval_ms == 15000:
                             idf = data.iloc[1+ival:51+ival]
-                            print(data.iloc[50+ival:51+ival])
+                            #print(data.iloc[50+ival:51+ival])
 
 
                         ax1.clear()
@@ -417,7 +411,7 @@ class ChartFrame(customtkinter.CTkFrame):
                         print("Failed because of", e)
 
 
-        #ani = animation.FuncAnimation(fig, animate, interval=interval_ms)
+        ani = animation.FuncAnimation(fig, animate, interval=interval_ms)
 
 
         canvas = FigureCanvasTkAgg(fig, master=self)  # A tk.DrawingArea.
@@ -501,7 +495,9 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.confirm = customtkinter.CTkButton(self, text="BUY", font=("Roboto", 16, "bold"), fg_color=MAIN_COLOR, hover=True, width=300, height=50, command=self.confirm)
         self.confirm.grid(row=12, column=1, columnspan=2, padx=10,pady=10)
 
-        self.Refresher()
+        t2 = threading.Thread(target=self.Refresher)
+
+        t2.start()
 
     
     def Refresher(self):
@@ -532,12 +528,19 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.after(1000, self.Refresher) # every second...
 
     def slider_event(self, value):
+
+        global volume
         
         self.sliderValue.set(value=round(value, 2))
 
         if mode2 == "Limit":
-            self.volumeValue.set(value=round((user.wallet.getUSD()*(value/100))/self.limitValue.get(),2))
-            self.toPay.set(value=round( self.volumeValue.get()*self.limitValue.get() ,2))
+            if self.limitValue.get():
+                if mode == "Buy":
+                    self.volumeValue.set(value=round((user.wallet.getUSD()*(value/100))/self.limitValue.get(),2))
+                    self.toPay.set(value=round( self.volumeValue.get()*self.limitValue.get() ,2))
+                elif mode == "Sell":
+                    self.volumeValue.set(value=round(self.limitValue.get()*(volume*value/100),2))
+                    self.toPay.set(value=volume*value/100)
             
 
         
@@ -553,10 +556,10 @@ class BuyLimitFrame(customtkinter.CTkFrame):
                     self.trade.add_Sell(self.volumeValue.get(),self.toPay.get())
             elif mode2 == "Limit":
                 if mode == "Buy":
-                    self.trade.add_differ(current_price,self.volumeValue.get())
+                    self.trade.add_differ_limit(self.limitValue.get(),self.volumeValue.get())
                     self.trade.add_Limit_Buy(self.toPay.get(),self.volumeValue.get(), self.limitValue.get())
                 elif mode == "Sell":
-                    self.trade.add_differ(current_price,self.needToPay.get())
+                    self.trade.add_differ_limit(self.limitValue.get(),self.needToPay.get())
                     self.trade.add_Limit_Sell(self.volumeValue.get(),self.toPay.get(), self.limitValue.get())
             self.sliderValue.set(value=0)
 
@@ -674,8 +677,12 @@ class TradesInfo(customtkinter.CTkFrame):
         self.diffValue = customtkinter.CTkLabel(self.right, text="0.00", font=("Roboto", 16), width=260)
         self.diffValue.grid(row=5, column=1,padx=10,pady=5)
 
+        t1 = threading.Thread(target=self.Refresher)
+
+        t1.start()
+
         
-        self.Refresher()
+        #self.Refresher()
         self.show_transactions()
         
 
@@ -702,20 +709,22 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.crypto.configure(text=exchange)
         
+        print(limits)
         
         for l in limits:
             dataLimit = yf.download(tickers=l.getType(), period=period, interval='1m')
 
             outputLimit = dataLimit[738+ival:739+ival]['Open']
             outputLimit = outputLimit.to_list()
-            if l.getBuyPrice() > outputLimit[0]:
-                if l.getBuyPrice() <= outputLimit[0]:
-                    user.wallet.addProduct(l.getType(), outputLimit[0], datetime.now().strftime("%d/%m/%Y %H:%M:%S"), l.getVolume())
+            if l.getLimit() > l.getBuyPrice():
+                if l.getLimit() <= outputLimit[0]:
+                    print("yessss")
+                    user.wallet.addProduct(l.getType(), outputLimit[0], datetime.now().strftime("%d/%m/%Y %H:%M:%S"), l.getVolume(), 0)
                     tickers = user.wallet.getCryptos()
                     limits.remove(l)
-            elif l.getBuyPrice() < outputLimit[0]:
-                if l.getBuyPrice() >= outputLimit[0]:
-                    user.wallet.addProduct(l.getType(), outputLimit[0], datetime.now().strftime("%d/%m/%Y %H:%M:%S"), l.getVolume())
+            elif l.getLimit() < l.getBuyPrice():
+                if l.getLimit() >= outputLimit[0]:
+                    user.wallet.addProduct(l.getType(), outputLimit[0], datetime.now().strftime("%d/%m/%Y %H:%M:%S"), l.getVolume(), 0)
                     tickers = user.wallet.getCryptos()
                     limits.remove(l)
         
@@ -772,6 +781,47 @@ class TradesInfo(customtkinter.CTkFrame):
         self.priceDiff = customtkinter.CTkLabel(new, text=mode if mode2 == "Market" else mode2, text_color= MAIN_COLOR if mode == "Buy" else SECOND_COLOR, width=150)
         self.priceDiff.grid(row=0, column=5, padx=0)
 
+    def add_differ_limit(self, price, volume):
+        global lines
+
+        #if volume != 0:    
+
+        self.tradePrice = price
+        self.volumeVal = volume
+
+        new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
+        lines.append(new)
+        new.pack(side = tk.TOP, pady = 5, padx = 0)
+        self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"), width=200)
+        self.date.grid(row=0, column=0, padx=0)
+
+        self.ticker = customtkinter.CTkLabel(new, text=exchange, width=150)
+        self.ticker.grid(row=0, column=2, padx=0)
+
+        self.price = customtkinter.CTkLabel(new, text=price, width=150)
+        self.price.grid(row=0, column=3, padx=0)
+
+        self.volume = customtkinter.CTkLabel(new, text=volume, width=150)
+        self.volume.grid(row=0, column=4, padx=0)
+
+        self.priceDiff = customtkinter.CTkButton(new, text="Limit", fg_color=BACK_COLOR, text_color= YELLOW_COLOR, width=100 ,height=20, command=lambda: self.delete_limit(new, price, volume))
+        self.priceDiff.grid(row=0, column=5, padx=25)
+
+    def delete_limit(self, new, price, volume):
+        global lines
+        global limits
+
+        for l in limits:
+            if l.getLimit() == price and l.getVolume() == volume:
+                self.usdValue.configure(text=round(user.wallet.getUSD()+price*volume,2))
+                user.wallet.setUSD(user.wallet.getUSD()+price*volume)
+                limits.remove(l)
+
+        lines.remove(new)
+        new.destroy()
+
+        
+
     def add_Limit_Buy(self, price, volume, limit):
         global current_price
         global exchange
@@ -812,7 +862,6 @@ class TradesInfo(customtkinter.CTkFrame):
         global tickers
 
         if volume !=0:
-            print("sell")
             self.usdValue.configure(text=round(user.wallet.getUSD()+(price),2))
             user.wallet.setUSD(user.wallet.getUSD()+(price))
             user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume, 0)
@@ -841,8 +890,8 @@ class TradeFrame(customtkinter.CTkFrame):
 
 
         self.charts = {}
-        chart = customtkinter.CTkFrame(self, width=800, height=520, fg_color="grey")
-        #chart = ChartFrame(self)
+        #chart = customtkinter.CTkFrame(self, width=800, height=520, fg_color="grey")
+        chart = ChartFrame(self)
         self.charts[ChartFrame] = chart
         chart.grid(row=0, column=0, sticky=tk.W)
 
@@ -894,15 +943,37 @@ class App(customtkinter.CTk):
         menubar = tk.Menu(self.container)
         filemenu = tk.Menu(menubar, tearoff=0)
         filemenu.add_command(label="Exit", command=quit)
-        menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_cascade(label="Program", menu=filemenu)
 
+
+        cryptoChoice = tk.Menu(menubar, tearoff=0)
+        cryptoChoice.add_command(label="BTC-USD", command=lambda: [changeExchange("BTC-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="ETH-USD", command=lambda: [changeExchange("ETH-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="USDT-USD", command=lambda: [changeExchange("USDT-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="BNB-USD", command=lambda: [changeExchange("BNB-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="XRP-USD", command=lambda: [changeExchange("XRP-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="SOL-USD", command=lambda: [changeExchange("SOL-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="DOT-USD", command=lambda: [changeExchange("DOT-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        cryptoChoice.add_command(label="ADA-USD", command=lambda: [changeExchange("ADA-USD"), self.show_frame(TradeFrame, TradeFrame)])
 
         exchangeChoice = tk.Menu(menubar, tearoff=0)
-        exchangeChoice.add_command(label="BTC-USD", command=lambda: [changeExchange("BTC-USD"), self.show_frame(TradeFrame, TradeFrame)])
-        exchangeChoice.add_command(label="ETH-USD", command=lambda: [changeExchange("ETH-USD"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="TSLA", command=lambda: [changeExchange("TSLA"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="AAPL", command=lambda: [changeExchange("AAPL"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="AMD", command=lambda: [changeExchange("AMD"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="NVDA", command=lambda: [changeExchange("NVDA"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="GOOG", command=lambda: [changeExchange("GOOG"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="MSFT", command=lambda: [changeExchange("MSFT"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="AMZN", command=lambda: [changeExchange("AMZN"), self.show_frame(TradeFrame, TradeFrame)])
 
-        periodChoice = tk.Menu(menubar, tearoff=0)
-        periodChoice.add_command(label="2d", command=lambda: changePeriod("2d"))
+        currencyChoice = tk.Menu(menubar, tearoff=0)
+        currencyChoice.add_command(label="EURUSD", command=lambda: [changeExchange("EURUSD=X"), self.show_frame(TradeFrame, TradeFrame)])
+        currencyChoice.add_command(label="GBPUSD", command=lambda: [changeExchange("GBPUSD=X"), self.show_frame(TradeFrame, TradeFrame)])
+        currencyChoice.add_command(label="PLNUSD", command=lambda: [changeExchange("PLNUSD=X"), self.show_frame(TradeFrame, TradeFrame)])
+
+        materialsChoice = tk.Menu(menubar, tearoff=0)
+        materialsChoice.add_command(label="GOLD", command=lambda: [changeExchange("GC=F"), self.show_frame(TradeFrame, TradeFrame)])
+        materialsChoice.add_command(label="SILVER", command=lambda: [changeExchange("SI=F"), self.show_frame(TradeFrame, TradeFrame)])
+        materialsChoice.add_command(label="OIL", command=lambda: [changeExchange("CL=F"), self.show_frame(TradeFrame, TradeFrame)])
 
 
         intervalChoice = tk.Menu(menubar, tearoff=0)
@@ -911,8 +982,10 @@ class App(customtkinter.CTk):
         intervalChoice.add_command(label="5m", command=lambda: [changeInterval("5m", 5), self.trade.show_chart(ChartFrame, ChartFrame)])
         intervalChoice.add_command(label="15m", command=lambda: [changeInterval("15m", 15), self.trade.show_chart(ChartFrame, ChartFrame)])
 
-        menubar.add_cascade(label="Exchange", menu=exchangeChoice)
-        menubar.add_cascade(label="Period", menu=periodChoice)
+        menubar.add_cascade(label="Crypto", menu=cryptoChoice)
+        menubar.add_cascade(label="Stocks", menu=exchangeChoice)
+        menubar.add_cascade(label="Currencies", menu=currencyChoice)
+        menubar.add_cascade(label="Materials", menu=materialsChoice)
         menubar.add_cascade(label="Interval", menu=intervalChoice)
 
         tk.Tk.config(self, menu=menubar)
