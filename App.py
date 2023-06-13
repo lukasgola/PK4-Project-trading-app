@@ -348,8 +348,6 @@ def reset():
 
     connection.commit()
 
-#def save_wallet():
-
 
 def changeExchange(ex):
     global exchange
@@ -378,6 +376,12 @@ def changeInterval(int, ms):
 
     data = yf.download(tickers=exchange, period=period, interval=interval)
 
+
+def deposit():
+    dialog = customtkinter.CTkInputDialog(text="Make a deposit (USD):", title="Deposit")
+    dial = float(dialog.get_input())
+    user.wallet.setUSD(user.wallet.getUSD()+dial)
+    set_usd_sql(user.wallet.getUSD()+dial)
 
 
 class LoginFrame(customtkinter.CTkFrame):
@@ -845,8 +849,8 @@ class TradesInfo(customtkinter.CTkFrame):
         self.username = customtkinter.CTkLabel(self.right, text=user.getUsername(), font=("Roboto", 16, "bold"), width=480)
         self.username.grid(row=0, column=0, columnspan=2, padx=0,pady=5)
 
-        self.email = customtkinter.CTkLabel(self.right, text=user.getEmail(), font=("Roboto", 16, "bold"), width=480)
-        self.email.grid(row=1, column=0, columnspan=2, padx=0,pady=5)
+        self.deposit = customtkinter.CTkButton(self.right, text="Deposit", text_color=YELLOW_COLOR, fg_color=BACK_COLOR, font=("Roboto", 14, "bold"), width=180, command= lambda: deposit())
+        self.deposit.grid(row=1, column=0, columnspan=2, padx=0,pady=5)
 
         self.usd = customtkinter.CTkLabel(self.right, text="USD", font=("Roboto", 16, "bold"), width=180)
         self.usd.grid(row=2, column=0,padx=10,pady=5)
@@ -902,6 +906,7 @@ class TradesInfo(customtkinter.CTkFrame):
         color = "white"
 
         self.crypto.configure(text=exchange)
+        self.usdValue.configure(text=user.wallet.getUSD())
         
         for l in limits:
             dataLimit = yf.download(tickers=l.getType(), period=period, interval='1m')
@@ -1165,6 +1170,12 @@ class App(customtkinter.CTk):
         materialsChoice.add_command(label="GOLD", command=lambda: [changeExchange("GC=F"), self.show_frame(TradeFrame, TradeFrame)])
         materialsChoice.add_command(label="SILVER", command=lambda: [changeExchange("SI=F"), self.show_frame(TradeFrame, TradeFrame)])
         materialsChoice.add_command(label="OIL", command=lambda: [changeExchange("CL=F"), self.show_frame(TradeFrame, TradeFrame)])
+
+        indicators = tk.Menu(menubar, tearoff=0)
+        indicators.add_command(label="1m", command=lambda: [changeInterval("1m", 1), self.trade.show_chart(ChartFrame, ChartFrame)] )
+        indicators.add_command(label="2m", command=lambda: [changeInterval("2m", 2), self.trade.show_chart(ChartFrame, ChartFrame)])
+        indicators.add_command(label="5m", command=lambda: [changeInterval("5m", 5), self.trade.show_chart(ChartFrame, ChartFrame)])
+        indicators.add_command(label="15m", command=lambda: [changeInterval("15m", 15), self.trade.show_chart(ChartFrame, ChartFrame)])
 
 
         intervalChoice = tk.Menu(menubar, tearoff=0)
