@@ -1,18 +1,15 @@
-from Crypto import Crypto
+from Product import Product
 
 class Wallet:
     def __init__(self):
         self.USD = 100000
-        self.fiat = []
-        self.stocks = []
-        self.crypto = list()
+        self.products = list()
         self.limit = list()
 
-    def setWallet(self, u, f, s, c):
+    def setWallet(self, u, p, l):
         self.USD = u
-        self.fiat = f
-        self.stocks = s
-        self.crypto = c
+        self.products = p
+        self.limits = l
 
     def getUSD(self):
         return self.USD
@@ -21,14 +18,14 @@ class Wallet:
         self.USD = value
     
     def addProduct(self, type, buyPrice, buyDate, buyVolume, limit):
-        self.crypto.append(Crypto(type, buyPrice, buyDate, buyVolume, limit))
+        self.products.append(Product(type, buyPrice, buyDate, buyVolume, limit))
 
 
-    def getCryptos(self):
-        return self.crypto
+    def getProducts(self):
+        return self.products
     
     def addLimit(self, type, buyPrice, buyDate, buyVolume, limit):
-        self.limit.append(Crypto(type, buyPrice, buyDate, buyVolume, limit))
+        self.limit.append(Product(type, buyPrice, buyDate, buyVolume, limit))
     
     def getLimits(self):
         return self.limit

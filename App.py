@@ -33,6 +33,34 @@ SECOND_COLOR = '#F6475D'
 BACK_COLOR = "#161A1E"
 YELLOW_COLOR = "#FCD535"
 
+exchange = "BTC-USD"
+period = '2d'
+interval = '2m'
+interval_ms = 2000
+DatCounter = 9000
+
+current_price = 0
+
+chartLoad = True
+DataPace = "tick"
+
+
+ival = 0
+data = yf.download(tickers=exchange, period=period, interval=interval)
+
+refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
+
+
+tickers = []
+lines = []
+limits = []
+
+tradePrice = 0
+volume = 0
+
+mode = "Buy"
+mode2 = "Market"
+
 #Database
 def check_data(email, password):
     connection = sqlite3.connect("userdata.db")
@@ -104,8 +132,40 @@ def get_username(email):
     else:
         connection.close()
         return "None"
+    
+def get_user_id():
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
 
-def save_data(username, email, password):
+    cursor.execute("SELECT id FROM userdata WHERE email = ?",(user.getEmail(),))
+
+    usr = cursor.fetchall()
+
+    if usr:
+        connection.close()
+        return usr[0][0]
+    else:
+        connection.close()
+        return "None"
+    
+def get_wallet_id():
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    user_id = get_user_id()
+
+    cursor.execute("SELECT wallet_id FROM wallets WHERE user_id = ?",(user_id,))
+
+    wallet_id = cursor.fetchall()
+
+    if wallet_id:
+        connection.close()
+        return wallet_id[0][0]
+    else:
+        connection.close()
+        return "None"
+
+def create_user(username, email, password):
     connection = sqlite3.connect("userdata.db")
     cursor = connection.cursor()
 
@@ -118,38 +178,178 @@ def save_data(username, email, password):
         password VARCHAR(255) NOT NULL
     )""")
 
+    cursor.execute("""CREATE TABLE IF NOT EXISTS wallets (
+        wallet_id INTEGER PRIMARY KEY,
+        user_id INTEGER,
+        usd DOUBLE NOT NULL,
+        FOREIGN KEY (user_id)
+            REFERENCES userdata (id) 
+    )""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS products (
+        product_id INTEGER PRIMARY KEY,
+        wallet_id INTEGER,
+        type VARCHAR(255) NOT NULL,
+        buy_price DOUBLE NOT NULL,
+        buy_date VARCHAR(255) NOT NULL,
+        volume DOUBLE NOT NULL,
+        limited DOUBLE,
+        FOREIGN KEY (wallet_id)
+            REFERENCES wallets (wallet_id) 
+    )""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS limits (
+        product_id INTEGER PRIMARY KEY,
+        wallet_id INTEGER,
+        type VARCHAR(255) NOT NULL,
+        buy_price DOUBLE NOT NULL,
+        buy_date VARCHAR(255) NOT NULL,
+        volume DOUBLE NOT NULL,
+        limited DOUBLE,
+        FOREIGN KEY (wallet_id)
+            REFERENCES wallets (wallet_id) 
+    )""")
+
+    
+
     cursor.execute("INSERT INTO userdata (username, email, password) VALUES (?, ?, ?)",(username, email, password))
+    
+    cursor.execute("SELECT id FROM userdata WHERE email = ?",(email,))
+
+
+    user_id = cursor.fetchall()
+
+    print(type(user_id[0][0]))
+
+    cursor.execute("INSERT INTO wallets (user_id, usd ) VALUES (?, ?)", (user_id[0][0], 100000))
+
+    
 
     connection.commit()
 
+def add_product_sql(type, buyPrice, buyDate, volume, limit):
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
 
-exchange = "BTC-USD"
-period = '2d'
-interval = '2m'
-interval_ms = 2000
-DatCounter = 9000
+    wallet_id = get_wallet_id()
 
-current_price = 0
-
-chartLoad = True
-DataPace = "tick"
+    cursor.execute("INSERT INTO products (wallet_id, type, buy_price, buy_date, volume, limited) VALUES (?, ?, ?, ?, ?, ?)",(wallet_id, type, buyPrice, buyDate, volume, limit))
 
 
-ival = 0
-data = yf.download(tickers=exchange, period=period, interval=interval)
+    connection.commit()
 
-refresher_data = yf.download(tickers=exchange, period=period, interval='1m')
+def set_usd_sql(usd):
+
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    wallet_id = get_wallet_id()
+
+    cursor.execute("UPDATE wallets SET usd = ? WHERE wallet_id = ?",(usd, get_wallet_id()))
 
 
-tickers = []
-lines = []
-limits = []
+    connection.commit()
 
-tradePrice = 0
-volume = 0
+def get_usd_sql():
+    
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
 
-mode = "Buy"
-mode2 = "Market"
+    usr = get_user_id()
+
+    cursor.execute("SELECT usd FROM wallets WHERE user_id = ?",(usr,))
+
+    us = cursor.fetchall()
+
+    if us:
+        user.wallet.setUSD(us[0][0])
+    else:
+        print("Error")
+
+    connection.commit()
+
+def fetch_products():
+
+    global tickers
+
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT * FROM products WHERE wallet_id = ?",(get_wallet_id(),))
+
+    temp = cursor.fetchall()
+
+    for t in temp:
+        user.wallet.addProduct(t[2], t[3], t[4], t[5], t[6])
+    
+    tickers = user.wallet.getProducts()
+
+    if tickers:
+        connection.close()
+        return True
+    else:
+        connection.close()
+        return False
+
+def reset():
+    connection = sqlite3.connect("userdata.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS userdata (
+        id INTEGER PRIMARY KEY,
+        username VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL
+    )""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS wallets (
+        wallet_id INTEGER PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        usd DOUBLE NOT NULL,
+        FOREIGN KEY (user_id)
+            REFERENCES userdata (id) 
+    )""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS products (
+        product_id INTEGER PRIMARY KEY,
+        wallet_id INTEGER NOT NULL,
+        type VARCHAR(255) NOT NULL,
+        buy_price DOUBLE NOT NULL,
+        buy_date VARCHAR(255) NOT NULL,
+        volume DOUBLE NOT NULL,
+        limited DOUBLE,
+        FOREIGN KEY (wallet_id)
+            REFERENCES wallets (wallet_id) 
+    )""")
+
+    cursor.execute("""CREATE TABLE IF NOT EXISTS limits (
+        product_id INTEGER PRIMARY KEY,
+        wallet_id INTEGER NOT NULL,
+        type VARCHAR(255) NOT NULL,
+        buy_price DOUBLE NOT NULL,
+        buy_date VARCHAR(255) NOT NULL,
+        volume DOUBLE NOT NULL,
+        limited DOUBLE,
+        FOREIGN KEY (wallet_id)
+            REFERENCES wallets (wallet_id) 
+    )""")
+
+    cursor.execute("SELECT * FROM wallets")
+
+    uni = cursor.fetchall()
+
+    print(uni)
+
+    cursor.execute("SELECT * FROM products")
+
+    uni = cursor.fetchall()
+
+    print(uni)
+
+    connection.commit()
+
+#def save_wallet():
+
 
 def changeExchange(ex):
     global exchange
@@ -218,7 +418,8 @@ class LoginFrame(customtkinter.CTkFrame):
 
         if check_data(emailText, passwordText):
             user.setUser(get_username(emailText), emailText, passwordText)
-            print(user.getUsername())
+            fetch_products()
+            get_usd_sql()
             app.show_frame(TradeFrame, LoginFrame)
         if not check_email(emailText):
             self.show_message(self.emailError, "Email not found")
@@ -229,6 +430,7 @@ class LoginFrame(customtkinter.CTkFrame):
             
         
     def goToSignUp_event(self):
+        reset()
         app.show_frame(RegisterFrame, LoginFrame)
     
     def show_message(self, atributte, error='', color='black'):
@@ -292,7 +494,7 @@ class RegisterFrame(customtkinter.CTkFrame):
             password = self.password.get()
 
             if not check_username(username) and not check_email(email) and self.validate_email(email) and self.validate_password(password):
-                save_data(username, email, password)
+                create_user(username, email, password)
                 app.show_frame(TradeFrame, RegisterFrame)
         
     def goToSignIn_event(self):
@@ -549,10 +751,10 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         if self.volumeValue.get() != 0:
             if mode2 == "Market":
                 if mode == "Buy":
-                    self.trade.add_differ(current_price,self.volumeValue.get())
+                    self.trade.add_differ(current_price,self.volumeValue.get(), datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
                     self.trade.add_Buy(self.toPay.get(),self.volumeValue.get())
                 elif mode == "Sell":
-                    self.trade.add_differ(current_price,self.needToPay.get())
+                    self.trade.add_differ(current_price,self.needToPay.get(), datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
                     self.trade.add_Sell(self.volumeValue.get(),self.toPay.get())
             elif mode2 == "Limit":
                 if mode == "Buy":
@@ -566,10 +768,10 @@ class BuyLimitFrame(customtkinter.CTkFrame):
     def buyClick(self):
         global mode
         mode = "Buy"
-        user.wallet.getCryptos()
+        user.wallet.getProducts()
         self.sell.configure(fg_color="#39434D")
         self.buy.configure(fg_color=MAIN_COLOR)
-        self.confirm.configure(text="SELL", fg_color=MAIN_COLOR)
+        self.confirm.configure(text="BUY", fg_color=MAIN_COLOR)
 
     def sellClick(self):
         global mode
@@ -593,9 +795,6 @@ class BuyLimitFrame(customtkinter.CTkFrame):
         self.limitStr = customtkinter.CTkEntry(self, placeholder_text="Limit", textvariable=self.limitValue, width=300, height=50, border_width=1, corner_radius=10, font=("Roboto", 14))
         self.limitStr.grid(row=6,column=1, padx=20,pady=5, columnspan=2)
 
-
-
-    
     
 
     def show_message(self, atributte, error='', color='black'):
@@ -611,8 +810,6 @@ class TradesInfo(customtkinter.CTkFrame):
         self.width = width
 
         self.usd = user.wallet.getUSD()
-
-        #user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), 0.0123 )
 
 
         # add widgets onto the frame, for example:
@@ -643,8 +840,6 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.container1 = customtkinter.CTkScrollableFrame(self.container, width=800, height=200, fg_color = BACK_COLOR )
         self.container1.grid(row=1, column=0, sticky=tk.SW)
-
-
 
 
         self.username = customtkinter.CTkLabel(self.right, text=user.getUsername(), font=("Roboto", 16, "bold"), width=480)
@@ -678,7 +873,6 @@ class TradesInfo(customtkinter.CTkFrame):
         self.diffValue.grid(row=5, column=1,padx=10,pady=5)
 
         t1 = threading.Thread(target=self.Refresher)
-
         t1.start()
 
         
@@ -709,8 +903,6 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.crypto.configure(text=exchange)
         
-        print(limits)
-        
         for l in limits:
             dataLimit = yf.download(tickers=l.getType(), period=period, interval='1m')
 
@@ -718,14 +910,13 @@ class TradesInfo(customtkinter.CTkFrame):
             outputLimit = outputLimit.to_list()
             if l.getLimit() > l.getBuyPrice():
                 if l.getLimit() <= outputLimit[0]:
-                    print("yessss")
                     user.wallet.addProduct(l.getType(), outputLimit[0], datetime.now().strftime("%d/%m/%Y %H:%M:%S"), l.getVolume(), 0)
-                    tickers = user.wallet.getCryptos()
+                    tickers = user.wallet.getProducts()
                     limits.remove(l)
             elif l.getLimit() < l.getBuyPrice():
                 if l.getLimit() >= outputLimit[0]:
                     user.wallet.addProduct(l.getType(), outputLimit[0], datetime.now().strftime("%d/%m/%Y %H:%M:%S"), l.getVolume(), 0)
-                    tickers = user.wallet.getCryptos()
+                    tickers = user.wallet.getProducts()
                     limits.remove(l)
         
 
@@ -754,7 +945,7 @@ class TradesInfo(customtkinter.CTkFrame):
 
         self.after(1000, self.Refresher) # every second...
 
-    def add_differ(self, price, volume):
+    def add_differ(self, price, volume, datetime):
         
         global lines
 
@@ -766,7 +957,7 @@ class TradesInfo(customtkinter.CTkFrame):
         new = customtkinter.CTkFrame(self.container1, width=self.width, fg_color = "#39434D")
         lines.append(new)
         new.pack(side = tk.TOP, pady = 5, padx = 0)
-        self.date = customtkinter.CTkLabel(new, text=datetime.now().strftime("%d/%m/%Y %H:%M:%S"), width=200)
+        self.date = customtkinter.CTkLabel(new, text=datetime, width=200)
         self.date.grid(row=0, column=0, padx=0)
 
         self.ticker = customtkinter.CTkLabel(new, text=exchange, width=150)
@@ -778,7 +969,7 @@ class TradesInfo(customtkinter.CTkFrame):
         self.volume = customtkinter.CTkLabel(new, text=volume, width=150)
         self.volume.grid(row=0, column=4, padx=0)
 
-        self.priceDiff = customtkinter.CTkLabel(new, text=mode if mode2 == "Market" else mode2, text_color= MAIN_COLOR if mode == "Buy" else SECOND_COLOR, width=150)
+        self.priceDiff = customtkinter.CTkLabel(new, text="Sell" if volume < 0 else mode if mode2 == "Market" else mode2, text_color=SECOND_COLOR if volume <0 else MAIN_COLOR if mode == "Buy" else SECOND_COLOR, width=150)
         self.priceDiff.grid(row=0, column=5, padx=0)
 
     def add_differ_limit(self, price, volume):
@@ -853,8 +1044,10 @@ class TradesInfo(customtkinter.CTkFrame):
         if volume != 0:
             self.usdValue.configure(text=round(user.wallet.getUSD()-price,2))
             user.wallet.setUSD(user.wallet.getUSD()-price)
+            set_usd_sql(user.wallet.getUSD())
             user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume, 0)
-            tickers = user.wallet.getCryptos()
+            add_product_sql(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), volume, 0)
+            tickers = user.wallet.getProducts()
 
     def add_Sell(self, price, volume):
         global current_price
@@ -864,18 +1057,20 @@ class TradesInfo(customtkinter.CTkFrame):
         if volume !=0:
             self.usdValue.configure(text=round(user.wallet.getUSD()+(price),2))
             user.wallet.setUSD(user.wallet.getUSD()+(price))
+            set_usd_sql(user.wallet.getUSD())
             user.wallet.addProduct(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume, 0)
-            tickers = user.wallet.getCryptos()   
+            add_product_sql(exchange, current_price, datetime.now().strftime("%d/%m/%Y %H:%M:%S"), -volume, 0)
+            tickers = user.wallet.getProducts()   
 
 
 
     def show_transactions(self):
     
-        cryptoList = user.wallet.getCryptos()
+        cryptoList = user.wallet.getProducts()
 
         for t in cryptoList:
             if t.getType() == exchange:
-                self.add_differ(t.getBuyPrice(), t.getVolume())
+                self.add_differ(t.getBuyPrice(), t.getVolume(), t.getBuyDate())
 
             
 
@@ -908,7 +1103,6 @@ class TradeFrame(customtkinter.CTkFrame):
         buy.grid(row=0, column=1)
 
     def show_chart(self, cont, old): 
-        print("Printing")
         oldChart = self.charts[old]
         oldChart.destroy()
         chart = cont(self)
@@ -916,15 +1110,12 @@ class TradeFrame(customtkinter.CTkFrame):
         chart.grid(row=0, column=0, sticky=tk.W)
 
     def show_trades(self, cont, old): 
-        print("Printing")
         oldTrade = self.trades[old]
         oldTrade.destroy()
         trade = cont(self, width=1280, height=200, fg_color = BACK_COLOR)
         self.trades[cont] = trade
         trade.grid(row=1, column=0, columnspan=2)
 
-    def printShow(self):
-        print("show")
 
 
 
@@ -957,13 +1148,13 @@ class App(customtkinter.CTk):
         cryptoChoice.add_command(label="ADA-USD", command=lambda: [changeExchange("ADA-USD"), self.show_frame(TradeFrame, TradeFrame)])
 
         exchangeChoice = tk.Menu(menubar, tearoff=0)
-        exchangeChoice.add_command(label="TSLA", command=lambda: [changeExchange("TSLA"), self.show_frame(TradeFrame, TradeFrame)])
-        exchangeChoice.add_command(label="AAPL", command=lambda: [changeExchange("AAPL"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="TESLA", command=lambda: [changeExchange("TSLA"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="APPLE", command=lambda: [changeExchange("AAPL"), self.show_frame(TradeFrame, TradeFrame)])
         exchangeChoice.add_command(label="AMD", command=lambda: [changeExchange("AMD"), self.show_frame(TradeFrame, TradeFrame)])
-        exchangeChoice.add_command(label="NVDA", command=lambda: [changeExchange("NVDA"), self.show_frame(TradeFrame, TradeFrame)])
-        exchangeChoice.add_command(label="GOOG", command=lambda: [changeExchange("GOOG"), self.show_frame(TradeFrame, TradeFrame)])
-        exchangeChoice.add_command(label="MSFT", command=lambda: [changeExchange("MSFT"), self.show_frame(TradeFrame, TradeFrame)])
-        exchangeChoice.add_command(label="AMZN", command=lambda: [changeExchange("AMZN"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="NVIDIA", command=lambda: [changeExchange("NVDA"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="GOOGLE", command=lambda: [changeExchange("GOOG"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="MICROSOFT", command=lambda: [changeExchange("MSFT"), self.show_frame(TradeFrame, TradeFrame)])
+        exchangeChoice.add_command(label="AMAZON", command=lambda: [changeExchange("AMZN"), self.show_frame(TradeFrame, TradeFrame)])
 
         currencyChoice = tk.Menu(menubar, tearoff=0)
         currencyChoice.add_command(label="EURUSD", command=lambda: [changeExchange("EURUSD=X"), self.show_frame(TradeFrame, TradeFrame)])
@@ -996,7 +1187,7 @@ class App(customtkinter.CTk):
         trade.place(relx=0.5, rely=0.5,anchor=tk.CENTER)
 
 
-        self.show_frame(TradeFrame, TradeFrame)
+        self.show_frame(LoginFrame, TradeFrame)
 
 
     def show_frame(self, cont, old): 
