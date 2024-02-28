@@ -27,6 +27,6 @@ PK4-Project-trading-app is an application designed for trading stocks, cryptocur
 
 ## Preview
 <div>
-  <img src='https://github.com/lukasgola/myportfolio/blob/main/src/assets/trading-app-1.png?raw=true' width=400 />
-  <img src='https://github.com/lukasgola/myportfolio/blob/main/src/assets/trading-app-2.png?raw=true' width=400 />
+  <img src='https://github.com/lukasgola/PK4-Project-trading-app/blob/main/trading-app-1.png' width=400 />
+  <img src='https://github.com/lukasgola/PK4-Project-trading-app/blob/main/trading-app-2.png' width=400 />
 </div>
